@@ -253,10 +253,23 @@ final class MultipartPutParser
                     throw MultipartException::truncated(sprintf('the body of part "%s"', $name));
                 }
             }
-        } finally {
+        } catch (\Throwable $e) {
+            // This part never makes it into $state->parts on the way out, so
+            // the caller's cleanup (built from completed parts only) can never
+            // reach a temporary file abandoned mid-write — it has to go here.
             if ($handle !== null) {
                 fclose($handle);
             }
+
+            if ($path !== null) {
+                @unlink($path);
+            }
+
+            throw $e;
+        }
+
+        if ($handle !== null) {
+            fclose($handle);
         }
 
         return new MultipartPart(

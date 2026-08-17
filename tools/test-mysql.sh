@@ -57,7 +57,7 @@ if [ "$ready" -ne 1 ]; then
 fi
 
 echo "Running the suite against $IMAGE..."
-cd "$ROOT"
+cd "$ROOT/src"
 
 env \
     'database.tests.DBDriver=MySQLi' \

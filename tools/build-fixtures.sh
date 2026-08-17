@@ -11,7 +11,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OUT="$ROOT/tests/_support/Fixtures/Packages"
+OUT="$ROOT/src/tests/_support/Fixtures/Packages"
 TFM="${PEPITE_FIXTURE_TFM:-net10.0}"
 
 # Kept inside the repo on purpose: `mktemp -d` hands back an MSYS path

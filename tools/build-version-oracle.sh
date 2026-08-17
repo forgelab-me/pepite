@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Regenerates tests/_support/Fixtures/Versions/oracle.json from NuGet.Versioning,
+# Regenerates src/tests/_support/Fixtures/Versions/oracle.json from NuGet.Versioning,
 # the library the .NET clients use themselves.
 #
 # The result is committed, so the test suite does not need the .NET SDK. Run
@@ -10,7 +10,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT="$ROOT/tools/version-oracle"
-OUT="$ROOT/tests/_support/Fixtures/Versions"
+OUT="$ROOT/src/tests/_support/Fixtures/Versions"
 TFM="${PEPITE_FIXTURE_TFM:-net10.0}"
 
 mkdir -p "$OUT"

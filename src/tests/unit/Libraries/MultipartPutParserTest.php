@@ -28,7 +28,11 @@ final class MultipartPutParserTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tmpDir = sys_get_temp_dir() . '/pepite-multipart-test';
+        // One directory per test, not per class: a shared directory makes
+        // the before/after temp-file counts in
+        // testAnOversizedBodyLeavesNoTemporaryFileBehind() depend on every
+        // other test's cleanup having already run cleanly.
+        $this->tmpDir = sys_get_temp_dir() . '/pepite-multipart-test-' . bin2hex(random_bytes(6));
     }
 
     protected function tearDown(): void
@@ -38,6 +42,14 @@ final class MultipartPutParserTest extends CIUnitTestCase
         }
 
         $this->bodies = [];
+
+        if (is_dir($this->tmpDir)) {
+            foreach (glob($this->tmpDir . '/*') ?: [] as $file) {
+                @unlink($file);
+            }
+
+            @rmdir($this->tmpDir);
+        }
 
         parent::tearDown();
     }

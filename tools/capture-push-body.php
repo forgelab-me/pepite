@@ -16,7 +16,7 @@ declare(strict_types=1);
  */
 
 $name = getenv('PEPITE_CAPTURE_NAME') ?: 'push-simple';
-$dir  = __DIR__ . '/../tests/_support/Fixtures/Http';
+$dir  = __DIR__ . '/../src/tests/_support/Fixtures/Http';
 
 if (! is_dir($dir)) {
     mkdir($dir, 0o777, true);

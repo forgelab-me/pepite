@@ -13,7 +13,7 @@
 # reads registration, so it cannot tell you whether dependency resolution
 # works.
 #
-# The feed must already be running and populated:
+# The feed must already be running and populated (from src/):
 #   php spark serve
 #   php spark pepite:import "tests/_support/Fixtures/Packages/*.nupkg"
 #
