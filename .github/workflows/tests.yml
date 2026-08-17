@@ -1,0 +1,94 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    # The application lives in src/; the root holds packaging and docs.
+    defaults:
+      run:
+        working-directory: src
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          # sqlite3 is what the `tests` DB group uses (:memory:), so no DB service is needed
+          extensions: intl, mbstring, zip, sqlite3
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      # Only needs to run once, not once per PHP version in the matrix.
+      - name: Coding standard
+        if: matrix.php == '8.4'
+        run: composer cs
+
+      - name: Check the app boots
+        run: php spark routes
+
+      - name: Run tests
+        run: composer test
+
+  mysql:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src
+    # Development runs on SQLite and production on MySQL/MariaDB, and they
+    # disagree on at least one thing that matters: under a Unicode collation,
+    # MariaDB sorts the stable-release sentinel '~' *before* the prerelease
+    # markers, which puts 1.0.0 ahead of 1.0.0-alpha in every listing. This
+    # job is what tools/test-mysql.sh runs locally, as a GitHub-hosted service
+    # container instead of a container you start yourself.
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"
+          MARIADB_DATABASE: pepite_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, zip, mysqli
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run tests against MariaDB
+        env:
+          database.tests.DBDriver: MySQLi
+          database.tests.hostname: 127.0.0.1
+          database.tests.port: "3306"
+          database.tests.username: root
+          database.tests.password: ""
+          database.tests.database: pepite_test
+        run: composer test

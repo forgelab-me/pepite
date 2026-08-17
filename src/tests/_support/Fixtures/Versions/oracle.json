@@ -1,0 +1,796 @@
+{
+  "versions": [
+    {
+      "input": "0.9.0",
+      "normalized": "0.9.0",
+      "full": "0.9.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1",
+      "normalized": "1.0.0",
+      "full": "1.0.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.2",
+      "normalized": "1.2.0",
+      "full": "1.2.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.2.3",
+      "normalized": "1.2.3",
+      "full": "1.2.3",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.2.3.0",
+      "normalized": "1.2.3",
+      "full": "1.2.3",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.2.3.4",
+      "normalized": "1.2.3.4",
+      "full": "1.2.3.4",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "01.02.03",
+      "normalized": "1.2.3",
+      "full": "1.2.3",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "0.0.0",
+      "normalized": "0.0.0",
+      "full": "0.0.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "2147483647",
+      "normalized": "2147483647.0.0",
+      "full": "2147483647.0.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-alpha",
+      "normalized": "1.0.0-alpha",
+      "full": "1.0.0-alpha",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-Alpha",
+      "normalized": "1.0.0-Alpha",
+      "full": "1.0.0-Alpha",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-alpha.1",
+      "normalized": "1.0.0-alpha.1",
+      "full": "1.0.0-alpha.1",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-alpha.beta",
+      "normalized": "1.0.0-alpha.beta",
+      "full": "1.0.0-alpha.beta",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-beta",
+      "normalized": "1.0.0-beta",
+      "full": "1.0.0-beta",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-beta.2",
+      "normalized": "1.0.0-beta.2",
+      "full": "1.0.0-beta.2",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-beta.11",
+      "normalized": "1.0.0-beta.11",
+      "full": "1.0.0-beta.11",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-rc.1",
+      "normalized": "1.0.0-rc.1",
+      "full": "1.0.0-rc.1",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-rc.2",
+      "normalized": "1.0.0-rc.2",
+      "full": "1.0.0-rc.2",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-1",
+      "normalized": "1.0.0-1",
+      "full": "1.0.0-1",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0-99999999999",
+      "normalized": "1.0.0-99999999999",
+      "full": "1.0.0-99999999999",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0",
+      "normalized": "1.0.0",
+      "full": "1.0.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.0\u002Bbuild.5",
+      "normalized": "1.0.0",
+      "full": "1.0.0\u002Bbuild.5",
+      "isPrerelease": false,
+      "isSemVer2": true,
+      "hasMetadata": true,
+      "metadata": "build.5"
+    },
+    {
+      "input": "1.0.0-beta.2\u002Bbuild.5",
+      "normalized": "1.0.0-beta.2",
+      "full": "1.0.0-beta.2\u002Bbuild.5",
+      "isPrerelease": true,
+      "isSemVer2": true,
+      "hasMetadata": true,
+      "metadata": "build.5"
+    },
+    {
+      "input": "1.0.0.1",
+      "normalized": "1.0.0.1",
+      "full": "1.0.0.1",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.0.1",
+      "normalized": "1.0.1",
+      "full": "1.0.1",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.1.0",
+      "normalized": "1.1.0",
+      "full": "1.1.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "1.2.3.4-beta",
+      "normalized": "1.2.3.4-beta",
+      "full": "1.2.3.4-beta",
+      "isPrerelease": true,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    },
+    {
+      "input": "2.0.0",
+      "normalized": "2.0.0",
+      "full": "2.0.0",
+      "isPrerelease": false,
+      "isSemVer2": false,
+      "hasMetadata": false,
+      "metadata": null
+    }
+  ],
+  "sorted": [
+    "0.0.0",
+    "0.9.0",
+    "1.0.0-1",
+    "1.0.0-99999999999",
+    "1.0.0-alpha",
+    "1.0.0-Alpha",
+    "1.0.0-alpha.1",
+    "1.0.0-alpha.beta",
+    "1.0.0-beta",
+    "1.0.0-beta.2",
+    "1.0.0-beta.2\u002Bbuild.5",
+    "1.0.0-beta.11",
+    "1.0.0-rc.1",
+    "1.0.0-rc.2",
+    "1",
+    "1.0.0",
+    "1.0.0\u002Bbuild.5",
+    "1.0.0.1",
+    "1.0.1",
+    "1.1.0",
+    "1.2",
+    "1.2.3",
+    "1.2.3.0",
+    "01.02.03",
+    "1.2.3.4-beta",
+    "1.2.3.4",
+    "2.0.0",
+    "2147483647"
+  ],
+  "equalPairs": [
+    {
+      "left": "1",
+      "right": "1.0.0"
+    },
+    {
+      "left": "1",
+      "right": "1.0.0\u002Bbuild.5"
+    },
+    {
+      "left": "1.2.3",
+      "right": "1.2.3.0"
+    },
+    {
+      "left": "01.02.03",
+      "right": "1.2.3"
+    },
+    {
+      "left": "01.02.03",
+      "right": "1.2.3.0"
+    },
+    {
+      "left": "1.0.0-Alpha",
+      "right": "1.0.0-alpha"
+    },
+    {
+      "left": "1.0.0-beta.2",
+      "right": "1.0.0-beta.2\u002Bbuild.5"
+    },
+    {
+      "left": "1.0.0",
+      "right": "1.0.0\u002Bbuild.5"
+    }
+  ],
+  "candidates": [
+    {
+      "input": "",
+      "parses": false
+    },
+    {
+      "input": "   ",
+      "parses": false
+    },
+    {
+      "input": "abc",
+      "parses": false
+    },
+    {
+      "input": "1.2.3.4.5",
+      "parses": false
+    },
+    {
+      "input": "1..0",
+      "parses": false
+    },
+    {
+      "input": "1.0.",
+      "parses": false
+    },
+    {
+      "input": "1.0.0-",
+      "parses": false
+    },
+    {
+      "input": "1.0.0\u002B",
+      "parses": false
+    },
+    {
+      "input": "1.0.0-alpha..1",
+      "parses": false
+    },
+    {
+      "input": "1.0.0-alpha_1",
+      "parses": false
+    },
+    {
+      "input": "v1.0.0",
+      "parses": false
+    },
+    {
+      "input": "-1.0.0",
+      "parses": false
+    },
+    {
+      "input": "2147483648.0.0",
+      "parses": false
+    },
+    {
+      "input": "  1.0.0  ",
+      "parses": true
+    },
+    {
+      "input": "1.0.0-alpha\u002B",
+      "parses": false
+    },
+    {
+      "input": "1.0.0\u002B\u002Ba",
+      "parses": false
+    }
+  ],
+  "ranges": [
+    {
+      "input": "1.0",
+      "parses": true,
+      "normalized": "[1.0.0, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "1.0.0",
+      "parses": true,
+      "normalized": "[1.0.0, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "1.2.3.4",
+      "parses": true,
+      "normalized": "[1.2.3.4, )",
+      "minVersion": "1.2.3.4",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0]",
+      "parses": true,
+      "normalized": "[1.0.0, 1.0.0]",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "1.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0.0]",
+      "parses": true,
+      "normalized": "[1.0.0, 1.0.0]",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "1.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0,)",
+      "parses": true,
+      "normalized": "[1.0.0, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "(1.0,)",
+      "parses": true,
+      "normalized": "(1.0.0, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": false,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "[,2.0]",
+      "parses": true,
+      "normalized": "(, 2.0.0]",
+      "minVersion": null,
+      "isMinInclusive": false,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": false,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "(,2.0)",
+      "parses": true,
+      "normalized": "(, 2.0.0)",
+      "minVersion": null,
+      "isMinInclusive": false,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": false,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "(,2.0]",
+      "parses": true,
+      "normalized": "(, 2.0.0]",
+      "minVersion": null,
+      "isMinInclusive": false,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": false,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0,2.0]",
+      "parses": true,
+      "normalized": "[1.0.0, 2.0.0]",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0,2.0)",
+      "parses": true,
+      "normalized": "[1.0.0, 2.0.0)",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "(1.0,2.0)",
+      "parses": true,
+      "normalized": "(1.0.0, 2.0.0)",
+      "minVersion": "1.0.0",
+      "isMinInclusive": false,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "(1.0,2.0]",
+      "parses": true,
+      "normalized": "(1.0.0, 2.0.0]",
+      "minVersion": "1.0.0",
+      "isMinInclusive": false,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": true,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0.0-beta,)",
+      "parses": true,
+      "normalized": "[1.0.0-beta, )",
+      "minVersion": "1.0.0-beta",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0.0-beta.1,2.0.0-rc.1)",
+      "parses": true,
+      "normalized": "[1.0.0-beta.1, 2.0.0-rc.1)",
+      "minVersion": "1.0.0-beta.1",
+      "isMinInclusive": true,
+      "maxVersion": "2.0.0-rc.1",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "  [1.0, 2.0)  ",
+      "parses": true,
+      "normalized": "[1.0.0, 2.0.0)",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "   ",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "*",
+      "parses": true,
+      "normalized": "[*, )",
+      "minVersion": "0.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "1.*",
+      "parses": true,
+      "normalized": "[1.*, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "1.0.*",
+      "parses": true,
+      "normalized": "[1.0.*, )",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "1.0.0-*",
+      "parses": true,
+      "normalized": "[1.0.0-*, )",
+      "minVersion": "1.0.0-0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "1.0.0-beta.*",
+      "parses": true,
+      "normalized": "[1.0.0-beta.*, )",
+      "minVersion": "1.0.0-beta.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "[*,)",
+      "parses": true,
+      "normalized": "[*, )",
+      "minVersion": "0.0.0",
+      "isMinInclusive": true,
+      "maxVersion": null,
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": false,
+      "isFloating": true
+    },
+    {
+      "input": "[1.0.*,2.0)",
+      "parses": true,
+      "normalized": "[1.0.*, 2.0.0)",
+      "minVersion": "1.0.0",
+      "isMinInclusive": true,
+      "maxVersion": "2.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": true
+    },
+    {
+      "input": "[1.0",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "1.0]",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "(,)",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "[,]",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "[2.0,1.0]",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "(1.0,1.0)",
+      "parses": true,
+      "normalized": "(1.0.0, 1.0.0)",
+      "minVersion": "1.0.0",
+      "isMinInclusive": false,
+      "maxVersion": "1.0.0",
+      "isMaxInclusive": false,
+      "hasLowerBound": true,
+      "hasUpperBound": true,
+      "isFloating": false
+    },
+    {
+      "input": "[1.0,,2.0]",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    },
+    {
+      "input": "abc",
+      "parses": false,
+      "normalized": null,
+      "minVersion": null,
+      "isMinInclusive": null,
+      "maxVersion": null,
+      "isMaxInclusive": null,
+      "hasLowerBound": null,
+      "hasUpperBound": null,
+      "isFloating": null
+    }
+  ]
+}

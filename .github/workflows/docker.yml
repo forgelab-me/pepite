@@ -1,0 +1,111 @@
+name: Docker image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Pull requests are built but never published — nothing to log in for.
+      - name: Log in to the registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # v1.2.3 produces 1.2.3, 1.2 and 1 — so a deployment can follow
+          # whichever level of churn it wants. 'latest' only ever moves on tags.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=ref,event=branch
+            type=ref,event=pr
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Exercises the documented path — compose.yaml with .env.example —
+      # rather than `docker run`. Compose interpolates $ in env files, so a
+      # docker-run smoke test passes happily while the published instructions
+      # produce an admin account that accepts no password.
+      - name: Smoke test the documented setup
+        if: github.event_name == 'pull_request'
+        run: |
+          set -eux
+
+          cp .env.example .env
+          sed -i -e 's|^app_baseURL=.*|app_baseURL=http://localhost:8080/|' .env
+          sed -i -e 's|^app_forceGlobalSecureRequests=.*|app_forceGlobalSecureRequests=false|' .env
+          sed -i -e 's|^database_default_password=.*|database_default_password=secret|' .env
+          sed -i -e 's|^ADMIN_PASSWORD=.*|ADMIN_PASSWORD=smoke-test-password|' .env
+          sed -i -e 's|^APP_PORT=.*|APP_PORT=8080|' .env
+
+          printf '%s\n' \
+            'services:' \
+            '  app:' \
+            '    build: .' \
+            '    image: smoke:test' > compose.override.yaml
+
+          docker compose up -d --build --wait --wait-timeout 180
+
+          echo "--- entrypoint output ---"
+          docker compose logs app
+
+          echo "--- the app answers ---"
+          curl -sf -o /dev/null -w 'home: %{http_code}\n' http://localhost:8080/
+
+          echo "--- .htaccess is actually honored (AllowOverride, not just DocumentRoot) ---"
+          echo "--- a NuGet client hits this path directly, never /index.php/...; the base"
+          echo "--- image ships AllowOverride None, so this is the one Apache setting a"
+          echo "--- container deployment could get wrong without any test noticing ---"
+          curl -sf -o /tmp/index.json -w 'feed index: %{http_code}\n' http://localhost:8080/feeds/default/v3/index.json
+          grep -q '"version":"3.0.0"' /tmp/index.json
+
+          echo "--- the seeded admin can actually authenticate ---"
+          # The point of this check: a hash mangled by interpolation still seeds
+          # an account, and only verifying a password catches it.
+          docker compose exec -T db mariadb -upepite -psecret pepite -N \
+            -e "SELECT secret2 FROM auth_identities WHERE secret='admin@example.com';" > /tmp/hash.txt
+          docker compose exec -T app php -r \
+            'exit(password_verify("smoke-test-password", trim(file_get_contents("php://stdin"))) ? 0 : 1);' < /tmp/hash.txt
+
+          echo "--- writable/ is not reachable over HTTP ---"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/writable/logs/log.log)" = "404"
+
+          echo "--- restarting is idempotent ---"
+          docker compose up -d --force-recreate --wait --wait-timeout 180
+          curl -sf -o /dev/null -w 'home after restart: %{http_code}\n' http://localhost:8080/

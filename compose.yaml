@@ -1,0 +1,64 @@
+# Quick start:
+#   cp .env.example .env
+#   edit .env (at minimum app_baseURL, database_default_password, and ADMIN_*)
+#   docker compose up -d
+#
+# This .env belongs to Compose and lives at the repository root. The
+# application has its own, at src/.env — the two never meet, which is why the
+# directory split exists.
+#
+# Why env_file rather than listing everything under environment:. Compose
+# interpolates ${...} in this file, and a bcrypt hash is full of $ — passing
+# ADMIN_PASSWORD_HASH through substitution silently eats part of it and
+# creates an admin account nobody can log in to. Values read through
+# env_file reach the container verbatim.
+#
+# Variable names use CodeIgniter's underscore form (app_baseURL, not
+# app.baseURL): the container's shell is dash, which discards environment
+# variables whose names aren't valid shell identifiers, so a dotted name never
+# reaches PHP or Apache.
+
+services:
+  app:
+    image: ghcr.io/forgelab-me/pepite:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8080}:80"
+    env_file:
+      - .env
+    environment:
+      # Fixed by the shape of this stack rather than chosen by the operator.
+      CI_ENVIRONMENT: production
+      database_default_hostname: db
+      database_default_DBDriver: MySQLi
+      database_default_port: "3306"
+    volumes:
+      # Package blobs (.nupkg, extracted icons/readmes) and, if SQLite were
+      # chosen instead, the database itself. Losing this loses every package
+      # this instance has ever served — back it up like the database.
+      - pepite_data:/var/www/html/writable
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: "${database_default_database:-pepite}"
+      MARIADB_USER: "${database_default_username:-pepite}"
+      # This one does go through Compose substitution, so a literal $ in the
+      # password must be written $$ in .env.
+      MARIADB_PASSWORD: "${database_default_password:?set database_default_password in .env}"
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - pepite_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pepite_data:
+  pepite_db:
