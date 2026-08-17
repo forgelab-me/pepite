@@ -6,6 +6,7 @@ namespace App\Libraries\Http;
 
 use App\Exceptions\MultipartException;
 use App\Exceptions\PayloadTooLargeException;
+use Throwable;
 
 /**
  * Streams a multipart/form-data body out of a raw request stream.
@@ -253,7 +254,7 @@ final class MultipartPutParser
                     throw MultipartException::truncated(sprintf('the body of part "%s"', $name));
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // This part never makes it into $state->parts on the way out, so
             // the caller's cleanup (built from completed parts only) can never
             // reach a temporary file abandoned mid-write — it has to go here.
