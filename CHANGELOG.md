@@ -9,6 +9,15 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.3.1] - 2026-08-18
+
+### Fixed
+
+- `Config\Updater::$publicKeys` pointed at `config/keys/release-signing.pub`
+  — the wrong case for `app/Config/Keys/`. Harmless on a case-insensitive
+  filesystem, but on real hosting the public key was never found, and every
+  signed release was refused.
+
 ## [1.3.0] - 2026-08-18
 
 ### Added
