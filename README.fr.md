@@ -19,6 +19,9 @@ Une image Docker existe aussi, pour qui préfère ça.
   classiques sans dupliquer le serveur.
 - **Clés API à portée restreinte** — par feed, par motif d'identifiant (`Contoso.*`), avec ou
   sans droit de créer de nouveaux identifiants. Propriété au premier push.
+- **Trusted Publishing** — un workflow GitHub Actions peut pousser sans jamais détenir de clé
+  longue durée, en échangeant sa propre identité OIDC contre une clé à portée restreinte et
+  durée de vie courte au moment du push. Le même mécanisme que npm, PyPI et nuget.org.
 - **Délistage, jamais suppression** — un client qui dépend déjà d'une version délistée continue
   de la restaurer normalement ; seule sa visibilité en recherche change.
 - **Console d'admin** — feeds, clés API, navigation et modération des packages (délister /
@@ -142,6 +145,16 @@ Un `403` générique (pas la réponse JSON de Pépite) alors que la même URL fo
 navigateur signifie que le CDN bloque les clients non-navigateurs. Sur Cloudflare :
 **Security → WAF → Custom rules**, règle `URI Path contains /feeds/` → **Skip** : Bot Fight
 Mode, Super Bot Fight Mode, Security Level, Browser Integrity Check.
+
+## Trusted Publishing
+
+Un workflow GitHub Actions peut pousser des packages sans aucune clé API stockée dans les
+paramètres du dépôt — il échange son propre [jeton d'identité OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+contre une clé NuGet à portée restreinte, valable 15 minutes, au moment du push. À configurer
+depuis la page **Publieurs** d'un feed dans la console d'admin, qui affiche directement le YAML
+du workflow à coller. Guide complet, notamment comment un *environment* GitHub protégé peut
+placer une validation humaine entre un push et une publication :
+**[docs/trusted-publishing.md](docs/trusted-publishing.md)** (anglais).
 
 ## Sécurité
 

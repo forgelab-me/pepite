@@ -7,6 +7,7 @@
         "php": "^8.2",
         "codeigniter4/framework": "^4.7",
         "codeigniter4/shield": "^1.4",
+        "forgelab-me/ci4-trusted-publishing": "^1.0",
         "forgelab-me/ci4-updater": "^2.9"
     },
     "require-dev": {

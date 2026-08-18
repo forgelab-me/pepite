@@ -33,6 +33,7 @@
                 <td><?= esc($feed['allowed_package_types'] ? implode(', ', json_decode($feed['allowed_package_types'], true)) : 'tous') ?></td>
                 <td><?= (int) $feed['package_count'] ?></td>
                 <td class="actions">
+                    <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers') ?>">Publieurs</a>
                     <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/edit') ?>">Éditer</a>
                     <form method="post" action="<?= site_url('admin/feeds/' . $feed['id'] . '/delete') ?>"
                           onsubmit="return confirm('Supprimer le feed « <?= esc($feed['name'], 'js') ?> » et tous ses packages ?');">

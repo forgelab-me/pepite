@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "135d2ede4e344341defe2d97736e8238",
+    "content-hash": "5598d563b10ecfe4272acd44d1974519",
     "packages": [
         {
             "name": "codeigniter4/framework",
@@ -139,16 +139,16 @@
         },
         {
             "name": "codeigniter4/shield",
-            "version": "v1.4.0",
+            "version": "v1.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/codeigniter4/shield.git",
-                "reference": "78a9d043bfcd897900830b592a69b711517cf0b1"
+                "reference": "93c5f1f1481ced93ceb4071ffa3a08a9647a7c8b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/codeigniter4/shield/zipball/78a9d043bfcd897900830b592a69b711517cf0b1",
-                "reference": "78a9d043bfcd897900830b592a69b711517cf0b1",
+                "url": "https://api.github.com/repos/codeigniter4/shield/zipball/93c5f1f1481ced93ceb4071ffa3a08a9647a7c8b",
+                "reference": "93c5f1f1481ced93ceb4071ffa3a08a9647a7c8b",
                 "shasum": ""
             },
             "require": {
@@ -159,7 +159,8 @@
                 "codeigniter4/authentication-implementation": "1.0"
             },
             "require-dev": {
-                "boundwize/structarmed": "0.15.2",
+                "boundwize/pyrameter": "^0.5",
+                "boundwize/structarmed": "^0.15",
                 "codeigniter/phpstan-codeigniter": "^2.0",
                 "codeigniter4/devkit": "^1.3",
                 "codeigniter4/framework": ">=4.3.5 <4.5.0 || ^4.5.1",
@@ -207,7 +208,134 @@
                 "slack": "https://codeigniterchat.slack.com",
                 "source": "https://github.com/codeigniter4/shield"
             },
-            "time": "2026-07-23T15:59:34+00:00"
+            "time": "2026-08-18T12:02:04+00:00"
+        },
+        {
+            "name": "firebase/php-jwt",
+            "version": "v7.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/googleapis/php-jwt.git",
+                "reference": "b374a5d1a4f1f67fadc2165cdb284645945e2fc0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/googleapis/php-jwt/zipball/b374a5d1a4f1f67fadc2165cdb284645945e2fc0",
+                "reference": "b374a5d1a4f1f67fadc2165cdb284645945e2fc0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "guzzlehttp/guzzle": "^7.4",
+                "phpfastcache/phpfastcache": "^9.2",
+                "phpseclib/phpseclib": "~3.0",
+                "phpspec/prophecy-phpunit": "^2.0",
+                "phpunit/phpunit": "^9.5",
+                "psr/cache": "^2.0||^3.0",
+                "psr/http-client": "^1.0",
+                "psr/http-factory": "^1.0"
+            },
+            "suggest": {
+                "ext-sodium": "Support EdDSA (Ed25519) signatures",
+                "paragonie/sodium_compat": "Support EdDSA (Ed25519) signatures when libsodium is not present",
+                "phpseclib/phpseclib": "Support PS256 (RSASSA-PSS) signatures"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Firebase\\JWT\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Neuman Vong",
+                    "email": "neuman+pear@twilio.com",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Anant Narayanan",
+                    "email": "anant@php.net",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should conform to the current spec.",
+            "homepage": "https://github.com/googleapis/php-jwt",
+            "keywords": [
+                "jwt",
+                "php"
+            ],
+            "support": {
+                "issues": "https://github.com/googleapis/php-jwt/issues",
+                "source": "https://github.com/googleapis/php-jwt/tree/v7.1.0"
+            },
+            "time": "2026-06-11T17:54:14+00:00"
+        },
+        {
+            "name": "forgelab-me/ci4-trusted-publishing",
+            "version": "1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/forgelab-me/ci4-trusted-publishing.git",
+                "reference": "5438ca8d5632f1ebc82e8a51beb2f68eb04bf8a5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/forgelab-me/ci4-trusted-publishing/zipball/5438ca8d5632f1ebc82e8a51beb2f68eb04bf8a5",
+                "reference": "5438ca8d5632f1ebc82e8a51beb2f68eb04bf8a5",
+                "shasum": ""
+            },
+            "require": {
+                "ext-openssl": "*",
+                "firebase/php-jwt": "^6.10 || ^7.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "codeigniter4/framework": "^4.7",
+                "codeigniter4/shield": "^1.4",
+                "phpunit/phpunit": "^11.5"
+            },
+            "suggest": {
+                "codeigniter4/shield": "Required by ScopedTokens — minting, listing and purging the access tokens this package hands out."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Forgelabme\\TrustedPublishing\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Elie Bertret",
+                    "homepage": "https://github.com/forgelab-me"
+                }
+            ],
+            "description": "Let a CI workflow authenticate to your CodeIgniter 4 app with the identity token its runner mints, and get a short-lived Shield access token in exchange — no long-lived secret stored in the repository.",
+            "homepage": "https://github.com/forgelab-me/ci4-trusted-publishing",
+            "keywords": [
+                "ci",
+                "codeigniter",
+                "codeigniter4",
+                "github-actions",
+                "gitlab-ci",
+                "oidc",
+                "shield",
+                "trusted-publishing"
+            ],
+            "support": {
+                "issues": "https://github.com/forgelab-me/ci4-trusted-publishing/issues",
+                "source": "https://github.com/forgelab-me/ci4-trusted-publishing/tree/1.0.0"
+            },
+            "time": "2026-08-18T15:40:03+00:00"
         },
         {
             "name": "forgelab-me/ci4-updater",
@@ -959,16 +1087,16 @@
         },
         {
             "name": "friendsofphp/php-cs-fixer",
-            "version": "v3.95.18",
+            "version": "v3.95.19",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer.git",
-                "reference": "a8b4e4216faabf67f4e96110ee99a48c96e4e683"
+                "reference": "8a06c4ad6bd580b7920bd5ff81b271ca1158507e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/a8b4e4216faabf67f4e96110ee99a48c96e4e683",
-                "reference": "a8b4e4216faabf67f4e96110ee99a48c96e4e683",
+                "url": "https://api.github.com/repos/PHP-CS-Fixer/PHP-CS-Fixer/zipball/8a06c4ad6bd580b7920bd5ff81b271ca1158507e",
+                "reference": "8a06c4ad6bd580b7920bd5ff81b271ca1158507e",
                 "shasum": ""
             },
             "require": {
@@ -1052,7 +1180,7 @@
             ],
             "support": {
                 "issues": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/issues",
-                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.95.18"
+                "source": "https://github.com/PHP-CS-Fixer/PHP-CS-Fixer/tree/v3.95.19"
             },
             "funding": [
                 {
@@ -1060,7 +1188,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-07-30T15:46:02+00:00"
+            "time": "2026-08-17T16:24:07+00:00"
         },
         {
             "name": "mikey179/vfsstream",

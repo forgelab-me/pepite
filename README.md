@@ -19,6 +19,9 @@ A Docker image exists too, for anyone who'd rather use that.
   libraries without running a second server.
 - **Scoped API keys** — per feed, per identifier pattern (`Contoso.*`), with or without the
   right to create new identifiers. Ownership on first push.
+- **Trusted Publishing** — a GitHub Actions workflow can push without ever holding a long-lived
+  key, exchanging its own OIDC identity for a short-lived, narrowly scoped one at push time. The
+  same mechanism npm, PyPI and nuget.org offer.
 - **Delisting, never deletion** — a client already depending on a delisted version keeps
   restoring it normally; only its visibility in search changes.
 - **Admin console** — feeds, API keys, browsing and moderating packages (delist / relist), all
@@ -142,6 +145,15 @@ A generic `403` (not Pépite's own JSON response) while the same URL works in a 
 the CDN is blocking non-browser clients. On Cloudflare: **Security → WAF → Custom rules**, rule
 `URI Path contains /feeds/` → **Skip**: Bot Fight Mode, Super Bot Fight Mode, Security Level,
 Browser Integrity Check.
+
+## Trusted Publishing
+
+A GitHub Actions workflow can push packages with no API key stored in the repo's settings at
+all — it exchanges its own [OIDC identity token](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+for a scoped, 15-minute NuGet key at push time. Set it up from a feed's **Publieurs** page in
+the admin console, which shows the exact workflow YAML to paste. Full guide, including how a
+GitHub *protected* environment can put a human approval between a push and a publish:
+**[docs/trusted-publishing.md](docs/trusted-publishing.md)**.
 
 ## Security
 

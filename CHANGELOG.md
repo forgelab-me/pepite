@@ -9,6 +9,35 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.3.0] - 2026-08-18
+
+### Added
+
+- **Trusted Publishing** — a GitHub Actions workflow can push without ever
+  holding a long-lived API key, exchanging its own OIDC identity for a
+  scoped, 15-minute one at push time instead. Set up per feed from its
+  **Publieurs** page, which shows the exact workflow YAML to paste. Built on
+  [`forgelab-me/ci4-trusted-publishing`](https://github.com/forgelab-me/ci4-trusted-publishing).
+  See [docs/trusted-publishing.md](docs/trusted-publishing.md).
+- A footer on every page: copyright and a link back to the project.
+
+### Fixed
+
+- The update panel (`/admin/updates`) reported every outcome — an update
+  applied, a failed download, a rollback, a refused signature — as
+  flashdata the shared layout never rendered. Every one of those outcomes
+  was previously invisible: the page reloaded and nothing said why.
+- An upload that failed partway through (oversized body, truncated
+  multipart) could leave its partially written temporary file behind on
+  disk instead of being cleaned up.
+
+### Upgrading
+
+Run migrations (`php spark migrate --all`, or automatically via the Docker
+entrypoint and the update panel) — one new table, `trusted_publishers`.
+Nothing else changes: a feed with no trusted publisher configured behaves
+exactly as before.
+
 ## [1.2.0] - 2026-08-16
 
 Initial public release.

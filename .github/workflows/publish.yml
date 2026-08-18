@@ -1,0 +1,263 @@
+name: Publish release
+
+# Builds the release archive and publishes it to updates.forgelab.me — the
+# instance that serves Pépite's own updates.
+#
+# No stored upload secret: GitHub mints an identity token for this workflow
+# and the server exchanges it for a 15-minute publish token, having checked
+# the repository, the numeric account id and the environment it is pinned
+# to. This is ci4-update-server's own Trusted Publishing (a separate system
+# from the one Pépite offers its own users for pushing NuGet packages) —
+# see forgelab-me/ci4-update-server's docs/publishing.md.
+#
+# Publishing never promotes a release to latest. Once this run is green, do
+# that by hand on the project page at updates.forgelab.me/admin.
+#
+# Requires:
+#   - A trusted publisher for forgelab-me/pepite, environment `release`,
+#     configured on updates.forgelab.me/admin — this workflow gets refused
+#     with a 403 until that exists.
+#   - A protected environment named `release` on this repository, the same
+#     name the trusted publisher is pinned to, so a run outside it gets no
+#     credential at all.
+#
+# Environment secrets:
+#   RELEASE_SIGNING_KEY             the private key (PEM), matching the
+#                                   public key deployed in app/Config/keys
+#   RELEASE_SIGNING_KEY_PASSPHRASE  optional, if the key is protected
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      roots:
+        description: 'Directories this release covers'
+        type: choice
+        default: auto
+        options: [auto, 'app,public', 'app,public,vendor']
+      required:
+        description: 'Mark it as a step apps must not skip (auto = whenever vendor ships)'
+        type: choice
+        default: auto
+        options: [auto, 'yes', 'no']
+
+permissions:
+  contents: read
+  id-token: write # to mint the identity token, and nothing else
+
+concurrency: publish-${{ github.ref }}
+
+env:
+  SERVER: https://updates.forgelab.me
+  SLUG: pepite
+  # Not decoration: the host in front of updates.forgelab.me answers 403 to
+  # any request whose User-Agent contains "curl", or none at all, and the
+  # request never reaches the application. Send something else and it goes
+  # through.
+  UA: 'pepite-publish (+https://github.com/forgelab-me/pepite)'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Protected, and required by the trusted publisher: the approval it asks
+    # for stands in front of both the publish credential and the signing key.
+    # Hold the two secrets below as environment secrets, so nothing else in
+    # this repository can reach them.
+    environment: release
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the previous tag is needed to see whether composer.lock moved
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4' # what the Docker image runs
+          extensions: intl, mbstring, zip
+          coverage: none
+
+      - name: Read the version, and check the tag agrees with it
+        id: version
+        run: |
+          set -eu
+          # The manifest takes its version from the constant, not from the tag.
+          # A tag that disagrees would publish a release named after the wrong
+          # one, so stop here rather than after uploading.
+          VERSION=$(sed -n "s/.*const VERSION *= *'\([^']*\)'.*/\1/p" src/app/Config/Updater.php)
+          echo "Config\\Updater::VERSION = $VERSION"
+
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "${GITHUB_REF_NAME#v}" != "$VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match Config\\Updater::VERSION ($VERSION). Bump one of them."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Decide what this release covers
+        id: scope
+        env:
+          CHOICE: ${{ inputs.roots || 'auto' }}
+          REQUIRED_CHOICE: ${{ inputs.required || 'auto' }}
+        run: |
+          set -eu
+          ROOTS=$CHOICE
+
+          if [ "$ROOTS" = auto ]; then
+            # vendor/ only ships when the dependencies actually moved: it is an
+            # order of magnitude larger than the rest of the release.
+            PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+
+            if [ -z "$PREV" ]; then
+              echo "No earlier tag to compare against — shipping vendor/ to be safe."
+              ROOTS=app,public,vendor
+            elif git diff --quiet "$PREV" HEAD -- src/composer.json src/composer.lock; then
+              echo "composer.lock unchanged since $PREV."
+              ROOTS=app,public
+            else
+              echo "composer.lock moved since $PREV."
+              ROOTS=app,public,vendor
+            fi
+          fi
+
+          # A release shipping vendor/ is exactly what must not be jumped over:
+          # skip it and the dependency update it carries is never applied, since
+          # the next release only touches app/ and public/.
+          case "$REQUIRED_CHOICE" in
+            yes) REQUIRED=1 ;;
+            no)  REQUIRED=0 ;;
+            *)   case "$ROOTS" in *vendor*) REQUIRED=1 ;; *) REQUIRED=0 ;; esac ;;
+          esac
+
+          echo "Covers   : $ROOTS"
+          echo "Required : $REQUIRED"
+          echo "roots=$ROOTS" >> "$GITHUB_OUTPUT"
+          echo "required=$REQUIRED" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        working-directory: src
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Build and sign the release
+        working-directory: src
+        env:
+          SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+          SIGNING_KEY_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_KEY_PASSPHRASE }}
+          ROOTS: ${{ steps.scope.outputs.roots }}
+        run: |
+          set -eu
+
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "::error::RELEASE_SIGNING_KEY is not set. An unsigned release is refused by every app with \$publicKeys configured."
+            exit 1
+          fi
+
+          # Outside the checkout on purpose: anything under src/app or
+          # src/public would be scanned into the manifest and packed into the
+          # archive. $RUNNER_TEMP is neither.
+          KEY="$RUNNER_TEMP/release-signing.key"
+          umask 077
+          printf '%s\n' "$SIGNING_KEY" > "$KEY"
+
+          php spark update:manifest --roots "$ROOTS" --sign "$KEY" \
+            ${SIGNING_KEY_PASSPHRASE:+--passphrase "$SIGNING_KEY_PASSPHRASE"}
+
+          rm -f "$KEY"
+
+      - name: Locate the archive, and take the changelog from CHANGELOG.md
+        id: archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -eu
+          ZIP=$(ls -t src/release_*.zip | head -1)
+          echo "Archive: $ZIP ($(du -h "$ZIP" | cut -f1))"
+
+          # The section for this version, without its heading — that text is
+          # what other instances read in their update panel.
+          awk -v h="## [$VERSION]" 'index($0, h) == 1 { f = 1; next } f && /^## \[/ { exit } f' \
+            CHANGELOG.md > "$RUNNER_TEMP/changelog.txt"
+
+          if [ ! -s "$RUNNER_TEMP/changelog.txt" ]; then
+            echo "::warning::No section '## [$VERSION]' in CHANGELOG.md — publishing without a changelog."
+          fi
+
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+
+      - name: Exchange the GitHub identity for a publish token
+        id: auth
+        run: |
+          set -eu
+          # The audience is the server's own URL: a token minted for any other
+          # service is then refused here, and this one is useless elsewhere.
+          OIDC=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$SERVER" | jq -r .value)
+
+          if [ -z "$OIDC" ] || [ "$OIDC" = null ]; then
+            echo "::error::GitHub minted no identity token — check that the job has id-token: write."
+            exit 1
+          fi
+
+          # Status and body kept apart, so a refusal shows what the server
+          # actually said. Piping curl straight into jq turns every failure
+          # into a parse error and loses the message that explains it.
+          STATUS=$(curl -sS -X POST -A "$UA" \
+            -H "Authorization: Bearer $OIDC" \
+            -o "$RUNNER_TEMP/mint.json" -w '%{http_code}' \
+            "$SERVER/api/$SLUG/publish/token")
+
+          if [ "$STATUS" != 200 ]; then
+            echo "::error::the server refused to mint a publish token (HTTP $STATUS)"
+            cat "$RUNNER_TEMP/mint.json"
+            echo
+            exit 1
+          fi
+
+          TOKEN=$(jq -r .token < "$RUNNER_TEMP/mint.json")
+          rm -f "$RUNNER_TEMP/mint.json"
+
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        env:
+          TOKEN: ${{ steps.auth.outputs.token }}
+          ZIP: ${{ steps.archive.outputs.zip }}
+          REQUIRED: ${{ steps.scope.outputs.required }}
+        run: |
+          set -eu
+          STATUS=$(curl -sS -X POST -A "$UA" \
+            -H "Authorization: Bearer $TOKEN" \
+            -F "zip_file=@$ZIP" \
+            -F "changelog=<$RUNNER_TEMP/changelog.txt" \
+            -F "required=$REQUIRED" \
+            -o "$RUNNER_TEMP/published.json" -w '%{http_code}' \
+            "$SERVER/api/$SLUG/releases")
+
+          cat "$RUNNER_TEMP/published.json"
+          echo
+
+          if [ "$STATUS" != 201 ]; then
+            echo "::error::publishing failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Summary
+        if: success()
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ROOTS: ${{ steps.scope.outputs.roots }}
+          REQUIRED: ${{ steps.scope.outputs.required }}
+        run: |
+          {
+            echo "### Published $VERSION"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Covers | \`$ROOTS\` |"
+            echo "| Required step | $([ "$REQUIRED" = 1 ] && echo yes || echo no) |"
+            echo "| Latest | no — promote it on the project page |"
+            echo
+            echo "[$SERVER/admin]($SERVER/admin)"
+          } >> "$GITHUB_STEP_SUMMARY"

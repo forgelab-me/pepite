@@ -36,6 +36,10 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/unlist', 'Packages::unlist/$1/$2/$3');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/relist', 'Packages::relist/$1/$2/$3');
 
+    $routes->get('feeds/(:num)/publishers', 'Publishers::index/$1');
+    $routes->post('feeds/(:num)/publishers', 'Publishers::store/$1');
+    $routes->post('feeds/(:num)/publishers/(:num)/delete', 'Publishers::destroy/$1/$2');
+
     $routes->get('keys', 'ApiKeys::index');
     $routes->get('keys/create', 'ApiKeys::create');
     $routes->post('keys', 'ApiKeys::store');
@@ -87,4 +91,10 @@ $routes->group('feeds/(:segment)/api/v2', ['namespace' => 'App\Controllers\Api']
 
     $routes->delete('package/(:segment)/(:segment)', 'PackagePublish::unlist/$1/$2/$3', ['filter' => ['nugetkey:packages.unlist', 'maintenance']]);
     $routes->post('package/(:segment)/(:segment)', 'PackagePublish::relist/$1/$2/$3', ['filter' => ['nugetkey:packages.unlist', 'maintenance']]);
+
+    // Trusted Publishing: exchanges a GitHub Actions OIDC token for a scoped
+    // NuGet API key. No nugetkey filter — the credential presented here is
+    // the OIDC token, not a NuGet API key, and PublishToken verifies it by
+    // hand against GitHub's own signing keys.
+    $routes->post('publish/token', 'PublishToken::mint/$1', ['filter' => ['maintenance']]);
 });
