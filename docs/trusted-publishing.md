@@ -25,7 +25,7 @@ other API key).
 
 ## Setting it up
 
-1. In the admin console, open a feed's **Publieurs** page
+1. In the admin console, open a feed's **Publishers** page
    (`/admin/feeds/{id}/publishers`).
 2. Add the repository (`owner/name`) and the GitHub account's **numeric** id
    — not its name. Names can be freed and reclaimed by someone else; the id

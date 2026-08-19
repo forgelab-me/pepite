@@ -75,7 +75,7 @@ final class Packages extends Controller
 
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
-            ->with('message', $listed ? 'Version relistée.' : 'Version délistée.');
+            ->with('message', $listed ? 'Version relisted.' : 'Version delisted.');
     }
 
     /**

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -242,11 +242,11 @@
         <a href="<?= site_url('/') ?>">Feeds</a>
         <?php if (function_exists('auth') && auth()->loggedIn()): ?>
             <a href="<?= site_url('admin/feeds') ?>">Admin feeds</a>
-            <a href="<?= site_url('admin/keys') ?>">Clés API</a>
-            <a href="<?= site_url('admin/updates') ?>">Mises à jour</a>
-            <a href="<?= site_url('logout') ?>">Déconnexion</a>
+            <a href="<?= site_url('admin/keys') ?>">API keys</a>
+            <a href="<?= site_url('admin/updates') ?>">Updates</a>
+            <a href="<?= site_url('logout') ?>">Log out</a>
         <?php else: ?>
-            <a href="<?= site_url('login') ?>">Connexion</a>
+            <a href="<?= site_url('login') ?>">Log in</a>
         <?php endif ?>
     </nav>
 </header>

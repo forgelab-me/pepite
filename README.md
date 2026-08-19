@@ -150,7 +150,7 @@ Browser Integrity Check.
 
 A GitHub Actions workflow can push packages with no API key stored in the repo's settings at
 all — it exchanges its own [OIDC identity token](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
-for a scoped, 15-minute NuGet key at push time. Set it up from a feed's **Publieurs** page in
+for a scoped, 15-minute NuGet key at push time. Set it up from a feed's **Publishers** page in
 the admin console, which shows the exact workflow YAML to paste. Full guide, including how a
 GitHub *protected* environment can put a human approval between a push and a publish:
 **[docs/trusted-publishing.md](docs/trusted-publishing.md)**.

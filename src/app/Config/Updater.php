@@ -12,7 +12,7 @@ use Forgelabme\Ci4Updater\Config\Updater as BaseUpdater;
  */
 class Updater extends BaseUpdater
 {
-    public const VERSION    = '1.3.1';
+    public const VERSION    = '1.4.0';
     public const DATE       = '2026-08-18';
     public const USER_AGENT = 'UpdateServerAdmin/1.0';
 

@@ -1,13 +1,12 @@
 <?= $this->extend('layout/main') ?>
-<?= $this->section('title') ?>Publieurs de confiance — <?= esc($feed['name']) ?><?= $this->endSection() ?>
+<?= $this->section('title') ?>Trusted publishers — <?= esc($feed['name']) ?><?= $this->endSection() ?>
 <?= $this->section('content') ?>
 
 <a class="back-link" href="<?= site_url('admin/feeds') ?>">&larr; Feeds</a>
-<h1>Publieurs de confiance — <?= esc($feed['name']) ?></h1>
+<h1>Trusted publishers — <?= esc($feed['name']) ?></h1>
 <p class="lead">
-    Un dépôt GitHub listé ici peut échanger son identité OIDC contre une clé API à durée de vie
-    courte au moment du push, plutôt que de porter un secret longue durée dans ses paramètres.
-    Aucun secret n'est stocké ici.
+    A GitHub repository listed here can exchange its OIDC identity for a short-lived API key at
+    push time, instead of holding a long-lived secret in its settings. No secret is stored here.
 </p>
 
 <?php if ($errors !== []): ?>
@@ -15,14 +14,14 @@
 <?php endif ?>
 
 <?php if ($publishers === []): ?>
-    <p class="muted">Aucun publieur de confiance sur ce feed.</p>
+    <p class="muted">No trusted publishers on this feed.</p>
 <?php else: ?>
     <div class="card">
         <table>
             <thead>
             <tr>
-                <th>Dépôt</th><th>Id du compte</th><th>Environnement</th><th>Motif</th>
-                <th>Création</th><th>Dernière utilisation</th><th></th>
+                <th>Repository</th><th>Account id</th><th>Environment</th><th>Pattern</th>
+                <th>Can create</th><th>Last used</th><th></th>
             </tr>
             </thead>
             <tbody>
@@ -31,15 +30,15 @@
                     <td><code><?= esc($publisher['repository']) ?></code></td>
                     <td><?= esc($publisher['repository_owner_id']) ?></td>
                     <td><?= esc($publisher['environment'] ?? '—') ?></td>
-                    <td><?= esc($publisher['id_pattern'] ?? '(tous)') ?></td>
-                    <td><?= $publisher['can_create_package'] ? 'oui' : 'non' ?></td>
-                    <td><?= esc($publisher['last_used_at'] ?? 'jamais') ?></td>
+                    <td><?= esc($publisher['id_pattern'] ?? '(any)') ?></td>
+                    <td><?= $publisher['can_create_package'] ? 'yes' : 'no' ?></td>
+                    <td><?= esc($publisher['last_used_at'] ?? 'never') ?></td>
                     <td class="actions">
                         <form method="post"
                               action="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers/' . $publisher['id'] . '/delete') ?>"
-                              onsubmit="return confirm('Retirer la confiance envers « <?= esc($publisher['repository'], 'js') ?> » ?');">
+                              onsubmit="return confirm('Remove trust in &quot;<?= esc($publisher['repository'], 'js') ?>&quot;?');">
                             <?= csrf_field() ?>
-                            <button type="submit" class="small danger">Retirer</button>
+                            <button type="submit" class="small danger">Remove</button>
                         </form>
                     </td>
                 </tr>
@@ -50,45 +49,45 @@
 <?php endif ?>
 
 <div class="card">
-    <h2>Ajouter un publieur de confiance</h2>
+    <h2>Add a trusted publisher</h2>
 
     <form method="post" action="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers') ?>">
         <?= csrf_field() ?>
 
-        <label>Dépôt (compte/repo)
+        <label>Repository (account/repo)
             <input type="text" name="repository" placeholder="forgelab-me/pepite" required></label>
 
-        <label>Id numérique du compte GitHub
+        <label>Numeric GitHub account id
             <input type="text" name="repository_owner_id" placeholder="10387667" required></label>
         <p class="muted" style="margin-top:-.6rem;font-size:.82rem;">
-            Pas le nom du compte — un nom peut être libéré et repris par quelqu'un d'autre, pas
-            l'id. À trouver sur <code>api.github.com/users/&lt;compte&gt;</code>.
+            Not the account name — a name can be released and claimed by someone else, the id
+            can't. Find it at <code>api.github.com/users/&lt;account&gt;</code>.
         </p>
 
-        <label>Environnement GitHub Actions (optionnel)
+        <label>GitHub Actions environment (optional)
             <input type="text" name="environment" placeholder="release"></label>
         <p class="muted" style="margin-top:-.6rem;font-size:.82rem;">
-            Vide = n'importe quel job du dépôt. Rempli, il devient obligatoire — combiné à un
-            <em>environment</em> GitHub protégé, c'est ce qui place une validation humaine entre
-            un push sur le dépôt et une publication sur ce feed.
+            Empty = any job in the repository. Set, it becomes required — paired with a protected
+            GitHub <em>environment</em>, this is what puts a human approval between a push to the
+            repository and a publish to this feed.
         </p>
 
-        <label>Motif d'identifiant (glob, optionnel)
+        <label>Identifier pattern (glob, optional)
             <input type="text" name="id_pattern" placeholder="Contoso.*"></label>
 
         <label class="checkbox">
             <input type="checkbox" name="can_create_package" value="1">
-            Peut créer de nouveaux identifiants (pas seulement pousser des versions existantes)
+            Can create new identifiers (not just push existing versions)
         </label>
 
-        <p style="margin-top:1.25rem;"><button type="submit" class="primary">Faire confiance</button></p>
+        <p style="margin-top:1.25rem;"><button type="submit" class="primary">Trust it</button></p>
     </form>
 </div>
 
 <div class="card">
-    <h2>Configuration côté GitHub Actions</h2>
+    <h2>GitHub Actions configuration</h2>
     <p>
-        Audience OIDC à demander : <code><?= esc($audience) ?></code>
+        OIDC audience to request: <code><?= esc($audience) ?></code>
     </p>
     <pre>permissions:
   id-token: write
@@ -97,11 +96,11 @@
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: release # doit correspondre à l'environnement configuré ci-dessus
+    environment: release # must match the environment configured above
     steps:
       - uses: actions/checkout@v5
 
-      - name: Échanger l'identité GitHub contre une clé de publication
+      - name: Exchange the GitHub identity for a publish key
         id: auth
         run: |
           OIDC=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \

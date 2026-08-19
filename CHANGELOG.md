@@ -9,6 +9,15 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.4.0] - 2026-08-18
+
+### Changed
+
+- The admin console and public browsing pages are now entirely in English
+  — feeds, API keys, packages, Trusted Publishing, and the web installer.
+  Previously French. This project's documentation keeps its French edition
+  ([README.fr.md](README.fr.md)); the running application does not.
+
 ## [1.3.1] - 2026-08-18
 
 ### Fixed
@@ -25,7 +34,7 @@ release, and connected instances see it on `/admin/updates`.
 - **Trusted Publishing** — a GitHub Actions workflow can push without ever
   holding a long-lived API key, exchanging its own OIDC identity for a
   scoped, 15-minute one at push time instead. Set up per feed from its
-  **Publieurs** page, which shows the exact workflow YAML to paste. Built on
+  **Publishers** page, which shows the exact workflow YAML to paste. Built on
   [`forgelab-me/ci4-trusted-publishing`](https://github.com/forgelab-me/ci4-trusted-publishing).
   See [docs/trusted-publishing.md](docs/trusted-publishing.md).
 - A footer on every page: copyright and a link back to the project.

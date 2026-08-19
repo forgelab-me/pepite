@@ -56,7 +56,7 @@ final class Install extends Controller
         $requirements = $this->checkRequirements();
 
         if (in_array(false, array_column($requirements, 'ok'), true)) {
-            return $this->fail($requirements, [], ['Le serveur ne remplit pas les prérequis ci-dessous.']);
+            return $this->fail($requirements, [], ['The server does not meet the requirements below.']);
         }
 
         $post   = $this->request->getPost();
@@ -73,7 +73,7 @@ final class Install extends Controller
             $connection = db_connect('default', false);
             $connection->connect();
         } catch (Throwable $e) {
-            return $this->fail($requirements, $post, ['Connexion à la base de données impossible : ' . $e->getMessage()]);
+            return $this->fail($requirements, $post, ['Could not connect to the database: ' . $e->getMessage()]);
         }
 
         try {
@@ -90,11 +90,11 @@ final class Install extends Controller
                 $runner->setNamespace($namespace);
 
                 if (! $runner->latest()) {
-                    throw new RuntimeException(implode(' ', $runner->getCliMessages()) ?: 'Échec des migrations.');
+                    throw new RuntimeException(implode(' ', $runner->getCliMessages()) ?: 'Migrations failed.');
                 }
             }
         } catch (Throwable $e) {
-            return $this->fail($requirements, $post, ['Migrations : ' . $e->getMessage()], 500);
+            return $this->fail($requirements, $post, ['Migrations: ' . $e->getMessage()], 500);
         }
 
         $this->createAdmin((string) $post['admin_email'], (string) $post['admin_username'], (string) $post['admin_password']);
@@ -126,14 +126,14 @@ final class Install extends Controller
     private function checkRequirements(): array
     {
         return [
-            ['label' => 'PHP 8.2 ou supérieur (actuel : ' . PHP_VERSION . ')', 'ok' => version_compare(PHP_VERSION, '8.2.0', '>=')],
-            ['label' => 'Extension intl', 'ok' => extension_loaded('intl')],
-            ['label' => 'Extension mbstring', 'ok' => extension_loaded('mbstring')],
-            ['label' => 'Extension zip', 'ok' => extension_loaded('zip')],
-            ['label' => 'Extension dom', 'ok' => extension_loaded('dom')],
-            ['label' => 'PDO MySQL ou SQLite3 disponible', 'ok' => extension_loaded('pdo_mysql') || extension_loaded('pdo_sqlite')],
-            ['label' => 'writable/ accessible en écriture', 'ok' => is_writable(WRITEPATH)],
-            ['label' => 'Fichier .env accessible en écriture', 'ok' => $this->envIsWritable()],
+            ['label' => 'PHP 8.2 or later (currently ' . PHP_VERSION . ')', 'ok' => version_compare(PHP_VERSION, '8.2.0', '>=')],
+            ['label' => 'intl extension', 'ok' => extension_loaded('intl')],
+            ['label' => 'mbstring extension', 'ok' => extension_loaded('mbstring')],
+            ['label' => 'zip extension', 'ok' => extension_loaded('zip')],
+            ['label' => 'dom extension', 'ok' => extension_loaded('dom')],
+            ['label' => 'PDO MySQL or SQLite3 available', 'ok' => extension_loaded('pdo_mysql') || extension_loaded('pdo_sqlite')],
+            ['label' => 'writable/ is writable', 'ok' => is_writable(WRITEPATH)],
+            ['label' => '.env file is writable', 'ok' => $this->envIsWritable()],
         ];
     }
 
@@ -154,29 +154,29 @@ final class Install extends Controller
         $errors = [];
 
         if (trim((string) ($post['base_url'] ?? '')) === '') {
-            $errors[] = 'L\'URL du site est requise.';
+            $errors[] = 'The site URL is required.';
         }
 
         $driver = (string) ($post['db_driver'] ?? '');
 
         if (! in_array($driver, ['MySQLi', 'SQLite3'], true)) {
-            $errors[] = 'Choisissez un moteur de base de données.';
+            $errors[] = 'Choose a database engine.';
         }
 
         if ($driver === 'MySQLi' && trim((string) ($post['db_database'] ?? '')) === '') {
-            $errors[] = 'Le nom de la base MySQL est requis.';
+            $errors[] = 'The MySQL database name is required.';
         }
 
         if (! filter_var($post['admin_email'] ?? '', FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Adresse e-mail de l\'administrateur invalide.';
+            $errors[] = 'Invalid administrator e-mail address.';
         }
 
         if (trim((string) ($post['admin_username'] ?? '')) === '') {
-            $errors[] = 'Nom d\'utilisateur de l\'administrateur requis.';
+            $errors[] = 'Administrator username is required.';
         }
 
         if (strlen((string) ($post['admin_password'] ?? '')) < 8) {
-            $errors[] = 'Le mot de passe administrateur doit faire au moins 8 caractères.';
+            $errors[] = 'The administrator password must be at least 8 characters.';
         }
 
         return $errors;

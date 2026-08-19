@@ -5,7 +5,7 @@
 <h1>Feeds</h1>
 
 <?php if ($feeds === []): ?>
-    <p>Aucun feed public pour l'instant.</p>
+    <p>No public feed yet.</p>
 <?php else: ?>
     <div class="card">
         <table>

@@ -6,14 +6,14 @@
 
 <div class="toolbar">
     <h1 style="margin:0;">Feeds</h1>
-    <a class="button primary" href="<?= site_url('admin/feeds/create') ?>">Nouveau feed</a>
+    <a class="button primary" href="<?= site_url('admin/feeds/create') ?>">New feed</a>
 </div>
 
 <div class="card">
     <table>
         <thead>
         <tr>
-            <th>Feed</th><th>Visibilité</th><th>Nouveaux packages</th><th>Types acceptés</th>
+            <th>Feed</th><th>Visibility</th><th>New packages</th><th>Accepted types</th>
             <th>Packages</th><th></th>
         </tr>
         </thead>
@@ -26,19 +26,19 @@
                 </td>
                 <td>
                     <span class="badge <?= $feed['visibility'] === 'private' ? 'warn' : 'ok' ?>">
-                        <?= $feed['visibility'] === 'private' ? 'privé' : 'public' ?>
+                        <?= $feed['visibility'] === 'private' ? 'private' : 'public' ?>
                     </span>
                 </td>
-                <td><?= $feed['allow_new_packages'] ? 'oui' : 'non' ?></td>
-                <td><?= esc($feed['allowed_package_types'] ? implode(', ', json_decode($feed['allowed_package_types'], true)) : 'tous') ?></td>
+                <td><?= $feed['allow_new_packages'] ? 'yes' : 'no' ?></td>
+                <td><?= esc($feed['allowed_package_types'] ? implode(', ', json_decode($feed['allowed_package_types'], true)) : 'all') ?></td>
                 <td><?= (int) $feed['package_count'] ?></td>
                 <td class="actions">
-                    <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers') ?>">Publieurs</a>
-                    <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/edit') ?>">Éditer</a>
+                    <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers') ?>">Publishers</a>
+                    <a class="button small" href="<?= site_url('admin/feeds/' . $feed['id'] . '/edit') ?>">Edit</a>
                     <form method="post" action="<?= site_url('admin/feeds/' . $feed['id'] . '/delete') ?>"
-                          onsubmit="return confirm('Supprimer le feed « <?= esc($feed['name'], 'js') ?> » et tous ses packages ?');">
+                          onsubmit="return confirm('Delete feed &quot;<?= esc($feed['name'], 'js') ?>&quot; and all its packages?');">
                         <?= csrf_field() ?>
-                        <button type="submit" class="small danger">Supprimer</button>
+                        <button type="submit" class="small danger">Delete</button>
                     </form>
                 </td>
             </tr>

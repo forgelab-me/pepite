@@ -7,17 +7,17 @@
 <?php if (! empty($feed['description'])): ?><p><?= esc($feed['description']) ?></p><?php endif ?>
 
 <form method="get" style="margin: 1rem 0;">
-    <input type="search" name="q" value="<?= esc($query) ?>" placeholder="Rechercher un package"
+    <input type="search" name="q" value="<?= esc($query) ?>" placeholder="Search for a package"
            style="padding:.4rem .6rem; width: 20rem; max-width: 100%;">
-    <button type="submit">Rechercher</button>
+    <button type="submit">Search</button>
 </form>
 
 <?php if ($packages === []): ?>
-    <p>Aucun package ne correspond.</p>
+    <p>No matching package.</p>
 <?php else: ?>
     <div class="card">
         <table>
-            <thead><tr><th>Package</th><th>Téléchargements</th></tr></thead>
+            <thead><tr><th>Package</th><th>Downloads</th></tr></thead>
             <tbody>
             <?php foreach ($packages as $package): ?>
                 <tr>

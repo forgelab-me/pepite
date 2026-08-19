@@ -6,11 +6,11 @@
 <h1>Packages — <?= esc($feed['name']) ?></h1>
 
 <?php if ($packages === []): ?>
-    <p class="muted">Aucun package dans ce feed.</p>
+    <p class="muted">No packages in this feed.</p>
 <?php else: ?>
     <div class="card">
         <table>
-            <thead><tr><th>Package</th><th>Téléchargements</th></tr></thead>
+            <thead><tr><th>Package</th><th>Downloads</th></tr></thead>
             <tbody>
             <?php foreach ($packages as $package): ?>
                 <tr>

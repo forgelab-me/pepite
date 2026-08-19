@@ -52,7 +52,7 @@ final class Feeds extends Controller
             'allowed_package_types' => $this->packageTypesFromPost(),
         ]);
 
-        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" créé.', $slug));
+        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" created.', $slug));
     }
 
     public function edit(int $id): ResponseInterface
@@ -71,7 +71,7 @@ final class Feeds extends Controller
         if ($name === '') {
             return $this->response->setBody(view('admin/feeds/edit', [
                 'feed'   => $feed,
-                'errors' => ['Le nom est requis.'],
+                'errors' => ['Name is required.'],
             ]));
         }
 
@@ -83,7 +83,7 @@ final class Feeds extends Controller
             'allowed_package_types' => $this->packageTypesFromPost(),
         ]);
 
-        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" mis à jour.', $feed['slug']));
+        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" updated.', $feed['slug']));
     }
 
     /**
@@ -103,7 +103,7 @@ final class Feeds extends Controller
             $this->removeDirectory($directory);
         }
 
-        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" supprimé.', $feed['slug']));
+        return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" deleted.', $feed['slug']));
     }
 
     /**

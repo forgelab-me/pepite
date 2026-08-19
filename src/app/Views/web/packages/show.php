@@ -10,7 +10,7 @@
 
 <p>
     <a class="button" href="<?= site_url('feeds/' . $feed['slug'] . '/v3/flatcontainer/' . $package['package_id_lower'] . '/' . $version['version_normalized_lower'] . '/' . $package['package_id_lower'] . '.' . $version['version_normalized_lower'] . '.nupkg') ?>">
-        Télécharger le .nupkg
+        Download the .nupkg
     </a>
 </p>
 
@@ -22,7 +22,7 @@
                 <a href="<?= site_url('browse/' . $feed['slug'] . '/' . $package['package_id_lower'] . '/' . $row['version_normalized_lower']) ?>">
                     <?= esc($row['version_normalized']) ?>
                 </a>
-                <?= $row['id'] === $version['id'] ? ' (courante)' : '' ?>
+                <?= $row['id'] === $version['id'] ? ' (current)' : '' ?>
             </li>
         <?php endforeach ?>
     </ul>
@@ -30,9 +30,9 @@
 
 <?php if ($dependencies !== []): ?>
     <div class="card" style="margin-top:1rem;">
-        <h2 style="margin-top:0;">Dépendances</h2>
+        <h2 style="margin-top:0;">Dependencies</h2>
         <table>
-            <thead><tr><th>Framework</th><th>Package</th><th>Plage</th></tr></thead>
+            <thead><tr><th>Framework</th><th>Package</th><th>Range</th></tr></thead>
             <tbody>
             <?php foreach ($dependencies as $dep): ?>
                 <tr>

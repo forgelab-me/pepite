@@ -42,11 +42,11 @@ final class Publishers extends Controller
         $errors = [];
 
         if (preg_match('#\A[\w.-]+/[\w.-]+\z#', $repository) !== 1) {
-            $errors[] = 'Le dépôt doit avoir la forme "compte/repo".';
+            $errors[] = 'The repository must be shaped like "account/repo".';
         }
 
         if (preg_match('/\A\d+\z/', $ownerId) !== 1) {
-            $errors[] = "L'identifiant numérique du compte GitHub est requis (une faute de frappe ici et rien ne s'authentifiera jamais).";
+            $errors[] = 'The numeric GitHub account id is required (a typo here means nothing will ever authenticate).';
         }
 
         if ($errors !== []) {
@@ -72,7 +72,7 @@ final class Publishers extends Controller
 
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/publishers'))
-            ->with('message', sprintf('"%s" fait maintenant confiance à %s.', $feed['name'], $repository));
+            ->with('message', sprintf('"%s" now trusts %s.', $feed['name'], $repository));
     }
 
     public function destroy(int $feedId, int $publisherId): ResponseInterface
@@ -86,7 +86,7 @@ final class Publishers extends Controller
 
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/publishers'))
-            ->with('message', 'Publieur de confiance retiré.');
+            ->with('message', 'Trusted publisher removed.');
     }
 
     /**

@@ -52,7 +52,7 @@ final class ApiKeys extends Controller
 
         if ($user === null) {
             return $this->response->setBody(view('admin/keys/create', [
-                'errors' => ['email' => 'Aucun compte avec cet e-mail.'],
+                'errors' => ['email' => 'No account with that e-mail.'],
                 'feeds'  => model(FeedModel::class)->orderBy('slug', 'ASC')->findAll(),
             ]));
         }
@@ -89,7 +89,7 @@ final class ApiKeys extends Controller
         model(UserIdentityModel::class)->where('id', $identityId)->where('type', 'access_token')->delete();
         model(FeedApiKeyRuleModel::class)->where('identity_id', $identityId)->delete();
 
-        return redirect()->to(site_url('admin/keys'))->with('message', 'Clé révoquée.');
+        return redirect()->to(site_url('admin/keys'))->with('message', 'Key revoked.');
     }
 
     public function edit(int $identityId): ResponseInterface
@@ -147,7 +147,7 @@ final class ApiKeys extends Controller
             $existing === null ? $rules->insert($data) : $rules->update($existing['id'], $data);
         }
 
-        return redirect()->to(site_url('admin/keys'))->with('message', 'Clé mise à jour.');
+        return redirect()->to(site_url('admin/keys'))->with('message', 'Key updated.');
     }
 
     /**

@@ -151,8 +151,9 @@ Mode, Super Bot Fight Mode, Security Level, Browser Integrity Check.
 Un workflow GitHub Actions peut pousser des packages sans aucune clé API stockée dans les
 paramètres du dépôt — il échange son propre [jeton d'identité OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
 contre une clé NuGet à portée restreinte, valable 15 minutes, au moment du push. À configurer
-depuis la page **Publieurs** d'un feed dans la console d'admin, qui affiche directement le YAML
-du workflow à coller. Guide complet, notamment comment un *environment* GitHub protégé peut
+depuis la page **Publishers** d'un feed dans la console d'admin (elle-même en anglais), qui
+affiche directement le YAML du workflow à coller. Guide complet, notamment comment un
+*environment* GitHub protégé peut
 placer une validation humaine entre un push et une publication :
 **[docs/trusted-publishing.md](docs/trusted-publishing.md)** (anglais).
 
