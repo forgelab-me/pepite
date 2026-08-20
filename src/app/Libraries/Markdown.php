@@ -73,7 +73,19 @@ final class Markdown
 
         return preg_replace_callback(
             '/\[([^\]]+)\]\(([^)]+)\)/',
-            static fn (array $m): string => sprintf('<a href="%s" rel="nofollow">%s</a>', esc($m[2], 'attr'), $m[1]),
+            static function (array $m): string {
+                $url = trim($m[2]);
+
+                // A scheme like javascript: or data: survives attribute
+                // escaping — esc() encodes characters, not URL semantics —
+                // and the browser still runs it on click. Only http(s) and
+                // mailto are worth linking; anything else degrades to text.
+                if (preg_match('#^(https?://|mailto:)#i', $url) !== 1) {
+                    return esc($m[1]);
+                }
+
+                return sprintf('<a href="%s" rel="nofollow noopener">%s</a>', esc($url, 'attr'), $m[1]);
+            },
             $escaped,
         ) ?? $escaped;
     }

@@ -9,6 +9,16 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.4.1] - 2026-08-20
+
+### Fixed
+
+- A package README rendered on its public page could carry a Markdown link
+  with a `javascript:` (or other non-http) URL. `esc()` encoded the
+  characters but never checked the scheme, so the link still ran on click —
+  a stored XSS reachable by anyone able to push to a feed. Links now render
+  only for `http(s)://` and `mailto:`; anything else degrades to plain text.
+
 ## [1.4.0] - 2026-08-18
 
 ### Changed
