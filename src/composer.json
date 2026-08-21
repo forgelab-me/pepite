@@ -8,7 +8,8 @@
         "codeigniter4/framework": "^4.7",
         "codeigniter4/shield": "^1.4",
         "forgelab-me/ci4-trusted-publishing": "^1.0",
-        "forgelab-me/ci4-updater": "^2.9"
+        "forgelab-me/ci4-updater": "^2.9",
+        "league/commonmark": "^2.5"
     },
     "require-dev": {
         "codeigniter/coding-standard": "^1.9",

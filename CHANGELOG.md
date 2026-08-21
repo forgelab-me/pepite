@@ -9,6 +9,28 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.4.2] - 2026-08-21
+
+### Changed
+
+- The package README renderer now runs on
+  [`league/commonmark`](https://commonmark.thephpleague.com/) (with its GFM
+  extension) instead of the hand-rolled regex parser from 1.4.1. That parser
+  only ever understood headings, paragraphs and inline formatting — lists,
+  blockquotes and tables had no block-level handling at all, so their lines
+  fell through to the paragraph case and were squashed onto one run-on line.
+  Extending it to cover what a real README needs (lists, tables, blockquotes,
+  images, reference links, autolinks…) amounted to rebuilding GFM by hand,
+  worse and less tested than the library that already exists for it.
+
+### Security
+
+- league/commonmark's own defaults don't carry over the scheme check 1.4.1
+  added: raw HTML passes through untouched, and a `javascript:` link or
+  image is allowed. `App\Libraries\Markdown` now pins `html_input: escape`
+  and `allow_unsafe_links: false` explicitly, closing the same class of
+  stored XSS on the new renderer.
+
 ## [1.4.1] - 2026-08-20
 
 ### Fixed

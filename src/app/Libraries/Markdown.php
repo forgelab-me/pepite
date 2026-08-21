@@ -4,89 +4,47 @@ declare(strict_types=1);
 
 namespace App\Libraries;
 
+use League\CommonMark\CommonMarkConverter;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\MarkdownConverter;
+use League\CommonMark\Util\HtmlFilter;
+
 /**
- * Just enough Markdown to render a README: headings, bold, italic, inline
- * code, fenced code blocks, links and paragraphs. Not a CommonMark
- * implementation — a dependency-free stand-in so a v1 readme page isn't
- * either raw text or a new Composer dependency.
+ * Renders a package README to HTML.
+ *
+ * The README is content supplied by whoever pushed the package; everyone who
+ * browses the package page then renders it. league/commonmark's own defaults
+ * trust that input — raw HTML passes through untouched, and a `javascript:`
+ * link or image is allowed — which is exactly backwards for content nobody
+ * here vouches for. Both are overridden below; that override is the entire
+ * reason this class exists rather than a bare `new CommonMarkConverter()`.
  */
 final class Markdown
 {
+    private static ?MarkdownConverter $converter = null;
+
     public static function toHtml(string $source): string
     {
-        $lines  = preg_split('/\r\n|\r|\n/', $source) ?: [];
-        $html   = [];
-        $inCode = false;
-        $para   = [];
-
-        $flush = static function () use (&$para, &$html): void {
-            if ($para !== []) {
-                $html[] = '<p>' . self::inline(implode(' ', $para)) . '</p>';
-                $para   = [];
-            }
-        };
-
-        foreach ($lines as $line) {
-            if (str_starts_with(trim($line), '```')) {
-                $flush();
-                $inCode = ! $inCode;
-                $html[] = $inCode ? '<pre><code>' : '</code></pre>';
-
-                continue;
-            }
-
-            if ($inCode) {
-                $html[] = esc($line) . "\n";
-
-                continue;
-            }
-
-            if (trim($line) === '') {
-                $flush();
-
-                continue;
-            }
-
-            if (preg_match('/^(#{1,6})\s+(.*)$/', $line, $m)) {
-                $flush();
-                $level  = strlen($m[1]);
-                $html[] = sprintf('<h%d>%s</h%d>', $level, self::inline($m[2]), $level);
-
-                continue;
-            }
-
-            $para[] = trim($line);
-        }
-
-        $flush();
-
-        return implode("\n", $html);
+        return (string) self::converter()->convert($source);
     }
 
-    private static function inline(string $text): string
+    private static function converter(): MarkdownConverter
     {
-        $escaped = esc($text);
+        if (self::$converter !== null) {
+            return self::$converter;
+        }
 
-        $escaped = preg_replace('/`([^`]+)`/', '<code>$1</code>', $escaped) ?? $escaped;
-        $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
-        $escaped = preg_replace('/\*([^*]+)\*/', '<em>$1</em>', $escaped) ?? $escaped;
+        $converter = new CommonMarkConverter([
+            'html_input'         => HtmlFilter::ESCAPE,
+            'allow_unsafe_links' => false,
+            // A README nobody here wrote can nest lists/quotes as deep as it
+            // likes; cap it well short of what would trouble the parser's
+            // own recursion rather than trust it to stay reasonable.
+            'max_nesting_level' => 100,
+        ]);
 
-        return preg_replace_callback(
-            '/\[([^\]]+)\]\(([^)]+)\)/',
-            static function (array $m): string {
-                $url = trim($m[2]);
+        $converter->getEnvironment()->addExtension(new GithubFlavoredMarkdownExtension());
 
-                // A scheme like javascript: or data: survives attribute
-                // escaping — esc() encodes characters, not URL semantics —
-                // and the browser still runs it on click. Only http(s) and
-                // mailto are worth linking; anything else degrades to text.
-                if (preg_match('#^(https?://|mailto:)#i', $url) !== 1) {
-                    return esc($m[1]);
-                }
-
-                return sprintf('<a href="%s" rel="nofollow noopener">%s</a>', esc($url, 'attr'), $m[1]);
-            },
-            $escaped,
-        ) ?? $escaped;
+        return self::$converter = $converter;
     }
 }
