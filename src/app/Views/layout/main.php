@@ -243,6 +243,7 @@
         <?php if (function_exists('auth') && auth()->loggedIn()): ?>
             <a href="<?= site_url('admin/feeds') ?>">Admin feeds</a>
             <a href="<?= site_url('admin/keys') ?>">API keys</a>
+            <a href="<?= site_url('admin/users') ?>">Admins</a>
             <a href="<?= site_url('admin/updates') ?>">Updates</a>
             <a href="<?= site_url('logout') ?>">Log out</a>
         <?php else: ?>

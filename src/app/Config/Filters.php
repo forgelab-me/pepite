@@ -5,6 +5,7 @@ namespace Config;
 use App\Filters\FeedRead;
 use App\Filters\Maintenance;
 use App\Filters\NuGetApiKey;
+use App\Filters\RateLimit;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
 use CodeIgniter\Filters\CSRF;
@@ -15,6 +16,7 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
+use CodeIgniter\Shield\Filters\AuthRates;
 
 class Filters extends BaseFilters
 {
@@ -33,6 +35,8 @@ class Filters extends BaseFilters
         'nugetkey'    => NuGetApiKey::class,
         'feedread'    => FeedRead::class,
         'maintenance' => Maintenance::class,
+        'ratelimit'   => RateLimit::class,
+        'authrates'   => AuthRates::class,
 
         'csrf'          => CSRF::class,
         'toolbar'       => DebugToolbar::class,
@@ -115,5 +119,11 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        // Shield exposes these routes but never rate-limits them itself
+        // (see App\Filters\RateLimit's docblock for the equivalent on the
+        // NuGet protocol side). 10 attempts/minute per IP, same as AuthRates'
+        // own default.
+        'authrates' => ['before' => ['login*', 'register']],
+    ];
 }

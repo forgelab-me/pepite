@@ -9,6 +9,32 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.5.0] - 2026-08-25
+
+### Added
+
+- **Admin accounts, managed from the console** (`/admin/users`) — create a
+  second admin, see who has access, remove it again. Previously the only way
+  to add one was `php spark shield:user` from a terminal, which directly
+  contradicted the project's own pitch: a shared host with no SSH. A solo
+  operator will never notice this was missing; a small team adding a second
+  person was stuck without shell access. Removing access demotes an account
+  rather than deleting it — a Shield user backs package ownership elsewhere,
+  and demoting is the reversible half of that, the same instinct as
+  delisting a package instead of removing it. You can't remove your own
+  access, and the last remaining admin can't be removed.
+- **Rate limiting** on the endpoints nothing else throttled: pushing a
+  package, unlisting/relisting, and the Trusted Publishing token exchange
+  are now capped per IP (`App\Filters\RateLimit`), and `/login` and
+  `/register` now carry Shield's own `AuthRates` filter (10 attempts/minute
+  per IP) — it shipped with Shield but was never wired into a route. Both
+  gaps meant nothing stood between an attacker and repeatedly trying API
+  keys, replaying malformed OIDC tokens, or brute-forcing the login form.
+
+### Upgrading
+
+Nothing to migrate — both additions work with the existing schema.
+
 ## [1.4.2] - 2026-08-21
 
 ### Changed

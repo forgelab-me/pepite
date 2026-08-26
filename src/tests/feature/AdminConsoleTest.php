@@ -290,6 +290,85 @@ final class AdminConsoleTest extends CIUnitTestCase
         $this->assertSame(['packages.read'], unserialize($identity->extra));
     }
 
+    // ---------------------------------------------------------------- admins
+
+    public function testTheAdminsPageListsAccounts(): void
+    {
+        $result = $this->actingAs($this->admin)->call('get', 'admin/users');
+
+        $result->assertOK();
+        $result->assertSee('admin@pepite.test');
+    }
+
+    public function testAnAdminCanCreateAnotherAdmin(): void
+    {
+        $result = $this->postWithCsrf('admin/users/create', 'admin/users', [
+            'email'            => 'second@pepite.test',
+            'password'         => 'a-genuinely-long-passphrase',
+            'password_confirm' => 'a-genuinely-long-passphrase',
+        ]);
+
+        $result->assertRedirect();
+
+        $created = model(UserModel::class)->findByCredentials(['email' => 'second@pepite.test']);
+        $this->assertNotNull($created);
+        $this->assertTrue($created->inGroup('admin'));
+        $this->assertTrue($created->active);
+    }
+
+    public function testCreatingAnAdminWithAShortPasswordFails(): void
+    {
+        $this->postWithCsrf('admin/users/create', 'admin/users', [
+            'email'    => 'second@pepite.test',
+            'password' => 'short',
+        ]);
+
+        $this->assertNull(model(UserModel::class)->findByCredentials(['email' => 'second@pepite.test']));
+    }
+
+    public function testCreatingAnAdminWithADuplicateEmailFails(): void
+    {
+        $this->postWithCsrf('admin/users/create', 'admin/users', [
+            'email'            => 'admin@pepite.test',
+            'username'         => 'different-username',
+            'password'         => 'a-genuinely-long-passphrase',
+            'password_confirm' => 'a-genuinely-long-passphrase',
+        ]);
+
+        $this->assertSame(0, model(UserModel::class)->where('username', 'different-username')->countAllResults());
+    }
+
+    public function testAnAdminCanRemoveAnotherAdminsAccess(): void
+    {
+        $second = $this->createAdmin('second@pepite.test');
+
+        $this->postWithCsrf('admin/users', 'admin/users/' . $second->id . '/delete', [])->assertRedirect();
+
+        $second = model(UserModel::class)->findById($second->id);
+        $this->assertFalse($second->inGroup('admin'));
+    }
+
+    public function testAnAdminCannotRemoveTheirOwnAccess(): void
+    {
+        $this->createAdmin('second@pepite.test');
+
+        $this->postWithCsrf('admin/users', 'admin/users/' . $this->admin->id . '/delete', []);
+
+        $stillAdmin = model(UserModel::class)->findById($this->admin->id);
+        $this->assertTrue($stillAdmin->inGroup('admin'));
+    }
+
+    private function createAdmin(string $email): User
+    {
+        $users = model(UserModel::class);
+        $users->save(new User(['username' => strstr($email, '@', true), 'email' => $email, 'password' => 'a-genuinely-long-passphrase']));
+        $user = $users->findById($users->getInsertID());
+        $user->addGroup('admin');
+        $user->activate();
+
+        return $user;
+    }
+
     private function createFeed(string $slug, string $name): int
     {
         model(FeedModel::class)->insert(['slug' => $slug, 'name' => $name]);

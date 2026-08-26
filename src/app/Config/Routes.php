@@ -40,6 +40,11 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
     $routes->post('feeds/(:num)/publishers', 'Publishers::store/$1');
     $routes->post('feeds/(:num)/publishers/(:num)/delete', 'Publishers::destroy/$1/$2');
 
+    $routes->get('users', 'Users::index');
+    $routes->get('users/create', 'Users::create');
+    $routes->post('users', 'Users::store');
+    $routes->post('users/(:num)/delete', 'Users::destroy/$1');
+
     $routes->get('keys', 'ApiKeys::index');
     $routes->get('keys/create', 'ApiKeys::create');
     $routes->post('keys', 'ApiKeys::store');
@@ -83,18 +88,21 @@ $routes->group('feeds/(:segment)/v3', [
  * same permission.
  */
 $routes->group('feeds/(:segment)/api/v2', ['namespace' => 'App\Controllers\Api'], static function ($routes): void {
-    $routes->put('package', 'PackagePublish::push/$1', ['filter' => ['nugetkey:packages.push', 'maintenance']]);
-    $routes->put('package/', 'PackagePublish::push/$1', ['filter' => ['nugetkey:packages.push', 'maintenance']]);
+    // ratelimit runs first on every route below: it's IP-scoped and rejects
+    // for free, so an abusive caller is turned away before the more
+    // expensive checks after it (API key lookup, JWT verification) ever run.
+    $routes->put('package', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
+    $routes->put('package/', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
 
-    $routes->put('symbolpackage', 'PackagePublish::pushSymbols/$1', ['filter' => ['nugetkey:packages.push', 'maintenance']]);
-    $routes->put('symbolpackage/', 'PackagePublish::pushSymbols/$1', ['filter' => ['nugetkey:packages.push', 'maintenance']]);
+    $routes->put('symbolpackage', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
+    $routes->put('symbolpackage/', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
 
-    $routes->delete('package/(:segment)/(:segment)', 'PackagePublish::unlist/$1/$2/$3', ['filter' => ['nugetkey:packages.unlist', 'maintenance']]);
-    $routes->post('package/(:segment)/(:segment)', 'PackagePublish::relist/$1/$2/$3', ['filter' => ['nugetkey:packages.unlist', 'maintenance']]);
+    $routes->delete('package/(:segment)/(:segment)', 'PackagePublish::unlist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist', 'maintenance']]);
+    $routes->post('package/(:segment)/(:segment)', 'PackagePublish::relist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist', 'maintenance']]);
 
     // Trusted Publishing: exchanges a GitHub Actions OIDC token for a scoped
     // NuGet API key. No nugetkey filter — the credential presented here is
     // the OIDC token, not a NuGet API key, and PublishToken verifies it by
     // hand against GitHub's own signing keys.
-    $routes->post('publish/token', 'PublishToken::mint/$1', ['filter' => ['maintenance']]);
+    $routes->post('publish/token', 'PublishToken::mint/$1', ['filter' => ['ratelimit:token', 'maintenance']]);
 });
