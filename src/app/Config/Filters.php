@@ -3,7 +3,6 @@
 namespace Config;
 
 use App\Filters\FeedRead;
-use App\Filters\Maintenance;
 use App\Filters\NuGetApiKey;
 use App\Filters\RateLimit;
 use CodeIgniter\Config\Filters as BaseFilters;
@@ -17,6 +16,7 @@ use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use CodeIgniter\Shield\Filters\AuthRates;
+use Forgelabme\Ci4Updater\Filters\Maintenance;
 
 class Filters extends BaseFilters
 {
@@ -32,8 +32,11 @@ class Filters extends BaseFilters
     public array $aliases = [
         // The NuGet client authenticates with X-NuGet-ApiKey, which Shield's
         // own `tokens` filter cannot read: it looks at Authorization: Bearer.
-        'nugetkey'    => NuGetApiKey::class,
-        'feedread'    => FeedRead::class,
+        'nugetkey' => NuGetApiKey::class,
+        'feedread' => FeedRead::class,
+        // ci4-updater's own — holds the whole app 503 for exactly as long as
+        // an apply is writing files, panel or `updater:apply` alike, instead
+        // of a flag someone has to remember to toggle by hand.
         'maintenance' => Maintenance::class,
         'ratelimit'   => RateLimit::class,
         'authrates'   => AuthRates::class,
@@ -88,6 +91,11 @@ class Filters extends BaseFilters
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
+            // Exempt so an admin already in the panel can still reach it —
+            // that's exactly when something may need checking or rolling
+            // back. See app/Views/maintenance.php for what NuGet clients vs.
+            // everyone else see while this is open.
+            'maintenance' => ['except' => ['admin/updates', 'admin/updates/*']],
         ],
         'after' => [
             // 'honeypot',

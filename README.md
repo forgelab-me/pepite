@@ -19,9 +19,9 @@ A Docker image exists too, for anyone who'd rather use that.
   libraries without running a second server.
 - **Scoped API keys** — per feed, per identifier pattern (`Contoso.*`), with or without the
   right to create new identifiers. Ownership on first push.
-- **Trusted Publishing** — a GitHub Actions workflow can push without ever holding a long-lived
-  key, exchanging its own OIDC identity for a short-lived, narrowly scoped one at push time. The
-  same mechanism npm, PyPI and nuget.org offer.
+- **Trusted Publishing** — a GitHub Actions or GitLab CI/CD job can push without ever holding a
+  long-lived key, exchanging its own OIDC identity for a short-lived, narrowly scoped one at push
+  time. The same mechanism npm, PyPI and nuget.org offer.
 - **Delisting, never deletion** — a client already depending on a delisted version keeps
   restoring it normally; only its visibility in search changes.
 - **Admin console** — feeds, API keys, browsing and moderating packages (delist / relist), all
@@ -126,9 +126,10 @@ filters: a command-line client has neither a cookie nor a token.
    (`writable/install.lock`).
 4. `public/.user.ini` raises the default upload limits; some hosts take a few minutes to pick
    it up.
-5. Later updates: the `/admin/updates` panel. While a release is being applied,
-   `php spark pepite:maintenance on` makes NuGet clients get a `503` instead of hitting files
-   mid-replacement; `off` once it's done.
+5. Later updates: the `/admin/updates` panel, or `php spark updater:check` / `updater:apply` over
+   SSH. Either way, the server holds itself in maintenance for exactly as long as the release is
+   writing — every client, NuGet or browser, gets a clean `503` instead of hitting files
+   mid-replacement — and comes back out on its own. Nothing to toggle by hand.
 
 `writable/` and `.env` must be writable by PHP. `writable/storage/` (the package blobs) must
 stay outside the web root.
@@ -148,12 +149,12 @@ Browser Integrity Check.
 
 ## Trusted Publishing
 
-A GitHub Actions workflow can push packages with no API key stored in the repo's settings at
-all — it exchanges its own [OIDC identity token](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
-for a scoped, 15-minute NuGet key at push time. Set it up from a feed's **Publishers** page in
-the admin console, which shows the exact workflow YAML to paste. Full guide, including how a
-GitHub *protected* environment can put a human approval between a push and a publish:
-**[docs/trusted-publishing.md](docs/trusted-publishing.md)**.
+A GitHub Actions or GitLab CI/CD job can push packages with no API key stored in the repo's
+settings at all — it exchanges its own OIDC identity token for a scoped, 15-minute NuGet key at
+push time, optionally pinned to one specific workflow file. Set it up from a feed's **Publishers**
+page in the admin console, which shows the exact YAML to paste for whichever provider is enabled.
+Full guide, including how a *protected* environment can put a human approval between a push and a
+publish: **[docs/trusted-publishing.md](docs/trusted-publishing.md)**.
 
 ## Security
 

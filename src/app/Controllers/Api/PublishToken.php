@@ -13,12 +13,13 @@ use CodeIgniter\Shield\Models\UserModel;
 use Config\TrustedPublishing;
 use Forgelabme\TrustedPublishing\PublisherMatcher;
 use Forgelabme\TrustedPublishing\ScopedTokens;
+use Forgelabme\TrustedPublishing\VerificationResult;
 use Forgelabme\TrustedPublishing\Verifier;
 
 /**
- * Trusted Publishing: exchanges a GitHub Actions OIDC identity token for a
- * short-lived NuGet API key, so a workflow never has to hold a long-lived
- * secret in the repo's settings.
+ * Trusted Publishing: exchanges a GitHub Actions or GitLab CI OIDC identity
+ * token for a short-lived NuGet API key, so a workflow never has to hold a
+ * long-lived secret in the repo's settings.
  *
  * Verification, identity normalisation and policy matching are
  * forgelab-me/ci4-trusted-publishing's job (Verifier, PublisherMatcher) —
@@ -46,14 +47,12 @@ final class PublishToken extends Controller
             return $this->error(404, sprintf('There is no feed named "%s".', $slug));
         }
 
-        $verifier = config(TrustedPublishing::class)->verifier('github');
-
-        if ($verifier === null) {
-            return $this->error(500, 'GitHub Actions is not an enabled Trusted Publishing provider.');
-        }
-
         $presented = Verifier::bearer($this->request->getHeaderLine('Authorization'));
-        $result    = $verifier->verify($presented);
+        $result    = $this->verify($presented);
+
+        if ($result === null) {
+            return $this->error(500, 'No Trusted Publishing provider is enabled.');
+        }
 
         if (! $result->ok) {
             return $this->error(401, $result->error);
@@ -70,11 +69,13 @@ final class PublishToken extends Controller
             // trusted publisher form for the tenth time looking for a typo
             // that a single log line would have named directly.
             return $this->error(403, sprintf(
-                'No trusted publisher on feed "%s" matches this token (repository "%s", owner id "%s", environment "%s").',
+                'No trusted publisher on feed "%s" matches this token (provider "%s", repository "%s", owner id "%s", environment "%s", workflow "%s").',
                 $slug,
+                $identity->provider,
                 $identity->repository,
                 $identity->ownerId,
                 $identity->environment !== '' ? $identity->environment : '(none)',
+                $identity->workflow !== '' ? $identity->workflow : '(none)',
             ));
         }
 
@@ -107,6 +108,37 @@ final class PublishToken extends Controller
             'expires_in' => self::MINTED_TTL_MINUTES * 60,
             'scope'      => implode(' ', $scopes),
         ]);
+    }
+
+    /**
+     * Nothing in the request says which provider signed the token, so every
+     * enabled one is tried in turn. Verifier::verify() refuses cleanly (no
+     * exception) on a mismatched issuer, so this is safe; JWKS is cached per
+     * provider, so it is cheap once warm.
+     *
+     * Null means no provider is enabled at all — a deployment misconfigured
+     * with an empty $providers list, not something a caller triggers.
+     */
+    private function verify(string $presented): ?VerificationResult
+    {
+        $config = config(TrustedPublishing::class);
+        $names  = $config->providerNames();
+
+        if ($names === []) {
+            return null;
+        }
+
+        $result = null;
+
+        foreach ($names as $name) {
+            $result = $config->verifier($name)->verify($presented);
+
+            if ($result->ok) {
+                return $result;
+            }
+        }
+
+        return $result;
     }
 
     private function error(int $status, string $message): ResponseInterface

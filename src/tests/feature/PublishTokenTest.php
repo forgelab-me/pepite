@@ -16,6 +16,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\FakeGithubOidc;
+use Tests\Support\FakeGitlabOidc;
 use Tests\Support\Fixtures;
 use Tests\Support\Fixtures\Http\MultipartBuilder;
 
@@ -43,6 +44,7 @@ final class PublishTokenTest extends CIUnitTestCase
         parent::setUp();
 
         FakeGithubOidc::seedCache();
+        FakeGitlabOidc::seedCache();
 
         $this->storageRoot = sys_get_temp_dir() . '/pepite-trusted-publisher-' . bin2hex(random_bytes(6));
         Services::injectMock('packageStorage', new PackageStorage($this->storageRoot, 4194304));
@@ -160,6 +162,84 @@ final class PublishTokenTest extends CIUnitTestCase
         $json   = json_decode((string) $result->response()->getBody(), true);
 
         $this->assertStringNotContainsString('packages.unlist', $json['scope']);
+    }
+
+    // ------------------------------------------------------------- gitlab
+
+    /**
+     * Nothing in the request names the provider — PublishToken has to try
+     * each enabled one and find GitLab on its own.
+     */
+    public function testMintingAScopedTokenFromGitlab(): void
+    {
+        $this->trust([
+            'provider'            => 'gitlab',
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '555',
+        ]);
+
+        $token = FakeGitlabOidc::token([
+            'aud'          => $this->audience(),
+            'project_path' => 'forgelab-me/pepite',
+            'namespace_id' => '555',
+        ]);
+
+        $result = $this->mint($token);
+
+        $result->assertStatus(201);
+
+        $identity = model(UserIdentityModel::class)->asArray()->where('name', 'ci: forgelab-me/pepite (gitlab)')->first();
+        $this->assertNotNull($identity);
+    }
+
+    /**
+     * A row scoped to GitHub must not be satisfied by a GitLab token that
+     * happens to carry the same repository string and owner id —
+     * PublisherMatcher checks the provider column too.
+     */
+    public function testAGithubPublisherDoesNotMatchAGitlabToken(): void
+    {
+        $this->trust(['provider' => 'github', 'repository_owner_id' => '555']);
+
+        $token = FakeGitlabOidc::token([
+            'aud'          => $this->audience(),
+            'project_path' => 'forgelab-me/pepite',
+            'namespace_id' => '555',
+        ]);
+
+        $this->mint($token)->assertStatus(403);
+    }
+
+    // ------------------------------------------------------------ workflow
+
+    public function testAWorkflowPinRefusesAnyOtherWorkflowInTheSameRepository(): void
+    {
+        $this->trust(['workflow' => 'forgelab-me/pepite/.github/workflows/release.yml']);
+
+        $token = FakeGithubOidc::token([
+            'aud'                 => $this->audience(),
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '10387667',
+            'job_workflow_ref'    => 'forgelab-me/pepite/.github/workflows/ci.yml@refs/heads/main',
+        ]);
+
+        $this->mint($token)->assertStatus(403);
+    }
+
+    public function testAWorkflowPinAcceptsTheMatchingWorkflowRegardlessOfTheTriggeringRef(): void
+    {
+        $this->trust(['workflow' => 'forgelab-me/pepite/.github/workflows/release.yml']);
+
+        $token = FakeGithubOidc::token([
+            'aud'                 => $this->audience(),
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '10387667',
+            // A tag-triggered run, not main — the workflow pin does not care
+            // which ref triggered it, only which file ran.
+            'job_workflow_ref' => 'forgelab-me/pepite/.github/workflows/release.yml@refs/tags/v1.2.0',
+        ]);
+
+        $this->mint($token)->assertStatus(201);
     }
 
     /**

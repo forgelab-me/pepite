@@ -19,8 +19,8 @@ Une image Docker existe aussi, pour qui préfère ça.
   classiques sans dupliquer le serveur.
 - **Clés API à portée restreinte** — par feed, par motif d'identifiant (`Contoso.*`), avec ou
   sans droit de créer de nouveaux identifiants. Propriété au premier push.
-- **Trusted Publishing** — un workflow GitHub Actions peut pousser sans jamais détenir de clé
-  longue durée, en échangeant sa propre identité OIDC contre une clé à portée restreinte et
+- **Trusted Publishing** — un job GitHub Actions ou GitLab CI/CD peut pousser sans jamais détenir
+  de clé longue durée, en échangeant sa propre identité OIDC contre une clé à portée restreinte et
   durée de vie courte au moment du push. Le même mécanisme que npm, PyPI et nuget.org.
 - **Délistage, jamais suppression** — un client qui dépend déjà d'une version délistée continue
   de la restaurer normalement ; seule sa visibilité en recherche change.
@@ -126,9 +126,11 @@ session ou CSRF : un client en ligne de commande n'a ni cookie ni jeton.
    verrouille ensuite (`writable/install.lock`).
 4. `public/.user.ini` relève les limites d'upload par défaut ; certains hébergeurs demandent
    quelques minutes avant de le prendre en compte.
-5. Mises à jour ultérieures : panneau `/admin/updates`. Pendant l'application d'une release,
-   `php spark pepite:maintenance on` fait répondre `503` aux clients NuGet plutôt que de les
-   laisser heurter des fichiers en cours de remplacement ; `off` une fois terminé.
+5. Mises à jour ultérieures : panneau `/admin/updates`, ou `php spark updater:check` /
+   `updater:apply` en SSH. Dans les deux cas, le serveur se met lui-même en maintenance le temps
+   exact de l'écriture — chaque client, NuGet ou navigateur, reçoit un `503` propre plutôt que de
+   heurter des fichiers en cours de remplacement — et en ressort tout seul. Rien à basculer à la
+   main.
 
 `writable/` et `.env` doivent être accessibles en écriture par PHP. `writable/storage/` (les
 blobs de packages) doit rester hors de la racine web.
@@ -148,14 +150,13 @@ Mode, Super Bot Fight Mode, Security Level, Browser Integrity Check.
 
 ## Trusted Publishing
 
-Un workflow GitHub Actions peut pousser des packages sans aucune clé API stockée dans les
-paramètres du dépôt — il échange son propre [jeton d'identité OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
-contre une clé NuGet à portée restreinte, valable 15 minutes, au moment du push. À configurer
-depuis la page **Publishers** d'un feed dans la console d'admin (elle-même en anglais), qui
-affiche directement le YAML du workflow à coller. Guide complet, notamment comment un
-*environment* GitHub protégé peut
-placer une validation humaine entre un push et une publication :
-**[docs/trusted-publishing.md](docs/trusted-publishing.md)** (anglais).
+Un job GitHub Actions ou GitLab CI/CD peut pousser des packages sans aucune clé API stockée dans
+les paramètres du dépôt — il échange son propre jeton d'identité OIDC contre une clé NuGet à
+portée restreinte, valable 15 minutes, au moment du push, optionnellement épinglée à un fichier
+de workflow précis. À configurer depuis la page **Publishers** d'un feed dans la console d'admin
+(elle-même en anglais), qui affiche directement le YAML à coller pour le provider activé. Guide
+complet, notamment comment un *environment* protégé peut placer une validation humaine entre un
+push et une publication : **[docs/trusted-publishing.md](docs/trusted-publishing.md)** (anglais).
 
 ## Sécurité
 

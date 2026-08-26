@@ -13,9 +13,10 @@ use CodeIgniter\Model;
  * Deciding whether a verified identity matches one of these rows is
  * forgelab-me/ci4-trusted-publishing's PublisherMatcher, not this class —
  * this only owns the rows themselves. Its column names (provider,
- * repository, repository_owner_id, environment) already match that
- * package's defaults, so App\Controllers\Api\PublishToken passes forFeed()'s
- * result straight to PublisherMatcher::match() with no column remapping.
+ * repository, repository_owner_id, environment, workflow) already match
+ * that package's defaults, so App\Controllers\Api\PublishToken passes
+ * forFeed()'s result straight to PublisherMatcher::match() with no column
+ * remapping.
  */
 final class TrustedPublisherModel extends Model
 {
@@ -30,6 +31,7 @@ final class TrustedPublisherModel extends Model
         'repository',
         'repository_owner_id',
         'environment',
+        'workflow',
         'id_pattern',
         'can_create_package',
         'last_used_at',

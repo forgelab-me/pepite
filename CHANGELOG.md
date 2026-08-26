@@ -9,6 +9,70 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.7.0] - 2026-08-26
+
+### Changed
+
+- **The maintenance window is now automatic, not a manual toggle.** Pépite's
+  own `App\Filters\Maintenance` and `pepite:maintenance on|off` predated
+  `forgelab-me/ci4-updater` having anywhere to hook into — its own docblock
+  said so outright. Since ci4-updater 2.14.0 it does: the package now holds
+  a maintenance window open for exactly as long as an apply is writing
+  files, panel or the new `updater:apply`/`updater:check` CLI alike
+  (2.12.0), migrations included, and closes it on its own with a TTL if the
+  process dies mid-write. Two separate, unlinked maintenance flags was a
+  real footgun — an update applied via the CLI path was invisible to
+  Pépite's own flag entirely. `Forgelabme\Ci4Updater\Filters\Maintenance` is
+  now wired globally (`Config\Filters`), exempting `admin/updates/*` so a
+  stuck update can still be reached, and a new
+  [maintenance.php](src/app/Views/maintenance.php) view keeps the same JSON
+  `503` a NuGet client got before for anything under `feeds/*`, and a plain
+  page for everything else — previously only the NuGet protocol routes were
+  covered at all; the admin console and public browsing pages had no
+  protection from a mid-swap read.
+- **`composer.json` and `composer.lock` now travel with a release that ships
+  `vendor/`.** `publish.yml` builds `vendor/` from the lock file whenever it
+  changed, but never shipped the two files describing what's in it — exactly
+  the gap `ci4-updater` 2.17.0's root files closes. `Config\Updater` lists
+  both in `$allowedFiles`; the workflow passes `--files
+  composer.json,composer.lock` to `update:manifest` whenever `vendor` is
+  covered.
+
+### Upgrading
+
+Nothing to migrate. If you run the update panel or `updater:apply` from a
+shell, nothing changes about how you trigger it — only what happens while it
+writes.
+
+## [1.6.0] - 2026-08-26
+
+### Added
+
+- **Trusted Publishing now supports GitLab CI/CD**, alongside GitHub Actions
+  — upgraded to `forgelab-me/ci4-trusted-publishing` 1.1.0. A feed's
+  **Publishers** page has a provider picker, accepts GitLab's nested
+  `group/subgroup/project` repository shape, and shows the matching
+  `id_tokens:` YAML to paste. Self-hosted GitLab is configured via
+  `Config\TrustedPublishing::$gitlabInstanceUrl` (or `.env`'s
+  `trustedpublishing.gitlabInstanceUrl`) — gitlab.com is the default and
+  needs nothing set. `POST .../publish/token` no longer assumes GitHub: it
+  tries every enabled provider against its own signing keys and accepts
+  whichever one the token was actually issued by.
+- **Trusted publishers can pin the workflow**, not just the repository and
+  environment — a new `workflow` column, populated from GitHub's
+  `job_workflow_ref` or GitLab's `ci_config_ref_uri` with the triggering ref
+  stripped off. Left blank it behaves exactly as before (any workflow in the
+  repository satisfies the row); set it, and a run of any other pipeline
+  file in the same repository is refused even if the environment matches. A
+  refused mint's `403` names the exact workflow value the token carried, so
+  there's nothing to guess when filling the field in.
+
+### Upgrading
+
+Run migrations — one new nullable column, `trusted_publishers.workflow`.
+Existing trusted publisher rows are unaffected: an empty workflow matches
+any pipeline file, same as before this release.
+
 ## [1.5.0] - 2026-08-25
 
 ### Added

@@ -64,8 +64,9 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
 $routes->group('feeds/(:segment)/v3', [
     'namespace' => 'App\Controllers\V3',
     // Public feeds pass through untouched; a private one demands Basic auth
-    // with an API key as the password. See App\Filters\FeedRead.
-    'filter' => ['feedread', 'maintenance'],
+    // with an API key as the password. See App\Filters\FeedRead. Nothing
+    // here lists 'maintenance': it's a global filter now (Config\Filters).
+    'filter' => ['feedread'],
 ], static function ($routes): void {
     $routes->get('index.json', 'ServiceIndex::show/$1');
 
@@ -91,18 +92,20 @@ $routes->group('feeds/(:segment)/api/v2', ['namespace' => 'App\Controllers\Api']
     // ratelimit runs first on every route below: it's IP-scoped and rejects
     // for free, so an abusive caller is turned away before the more
     // expensive checks after it (API key lookup, JWT verification) ever run.
-    $routes->put('package', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
-    $routes->put('package/', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
+    // 'maintenance' isn't listed: it's a global filter now (Config\Filters).
+    $routes->put('package', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push']]);
+    $routes->put('package/', 'PackagePublish::push/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push']]);
 
-    $routes->put('symbolpackage', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
-    $routes->put('symbolpackage/', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push', 'maintenance']]);
+    $routes->put('symbolpackage', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push']]);
+    $routes->put('symbolpackage/', 'PackagePublish::pushSymbols/$1', ['filter' => ['ratelimit:push', 'nugetkey:packages.push']]);
 
-    $routes->delete('package/(:segment)/(:segment)', 'PackagePublish::unlist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist', 'maintenance']]);
-    $routes->post('package/(:segment)/(:segment)', 'PackagePublish::relist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist', 'maintenance']]);
+    $routes->delete('package/(:segment)/(:segment)', 'PackagePublish::unlist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist']]);
+    $routes->post('package/(:segment)/(:segment)', 'PackagePublish::relist/$1/$2/$3', ['filter' => ['ratelimit:push', 'nugetkey:packages.unlist']]);
 
-    // Trusted Publishing: exchanges a GitHub Actions OIDC token for a scoped
-    // NuGet API key. No nugetkey filter — the credential presented here is
-    // the OIDC token, not a NuGet API key, and PublishToken verifies it by
-    // hand against GitHub's own signing keys.
-    $routes->post('publish/token', 'PublishToken::mint/$1', ['filter' => ['ratelimit:token', 'maintenance']]);
+    // Trusted Publishing: exchanges a GitHub Actions or GitLab CI/CD OIDC
+    // token for a scoped NuGet API key. No nugetkey filter — the credential
+    // presented here is the OIDC token, not a NuGet API key, and
+    // PublishToken verifies it by hand against each enabled provider's own
+    // signing keys.
+    $routes->post('publish/token', 'PublishToken::mint/$1', ['filter' => ['ratelimit:token']]);
 });

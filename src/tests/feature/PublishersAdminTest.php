@@ -84,6 +84,56 @@ final class PublishersAdminTest extends CIUnitTestCase
         $this->assertSame(0, (int) $publisher['can_create_package']);
     }
 
+    public function testAnAdminCanTrustAGitlabGroupWithNestedSubgroups(): void
+    {
+        $result = $this->postWithCsrf('admin/feeds/' . $this->feedId . '/publishers', [
+            'provider'            => 'gitlab',
+            'repository'          => 'forgelab-me/tools/pepite-mirror',
+            'repository_owner_id' => '555',
+            'workflow'            => 'forgelab-me/tools/pepite-mirror//.gitlab-ci.yml',
+        ]);
+
+        $result->assertRedirect();
+
+        $publisher = model(TrustedPublisherModel::class)->forFeed($this->feedId)[0];
+        $this->assertSame('gitlab', $publisher['provider']);
+        $this->assertSame('forgelab-me/tools/pepite-mirror', $publisher['repository']);
+        $this->assertSame('forgelab-me/tools/pepite-mirror//.gitlab-ci.yml', $publisher['workflow']);
+    }
+
+    public function testOmittingTheProviderFieldDefaultsToGithub(): void
+    {
+        $this->postWithCsrf('admin/feeds/' . $this->feedId . '/publishers', [
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '10387667',
+        ]);
+
+        $publisher = model(TrustedPublisherModel::class)->forFeed($this->feedId)[0];
+        $this->assertSame('github', $publisher['provider']);
+    }
+
+    public function testAnUnknownProviderIsRejected(): void
+    {
+        $this->postWithCsrf('admin/feeds/' . $this->feedId . '/publishers', [
+            'provider'            => 'bitbucket',
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '10387667',
+        ]);
+
+        $this->assertSame([], model(TrustedPublisherModel::class)->forFeed($this->feedId));
+    }
+
+    public function testBlankWorkflowIsStoredAsNull(): void
+    {
+        $this->postWithCsrf('admin/feeds/' . $this->feedId . '/publishers', [
+            'repository'          => 'forgelab-me/pepite',
+            'repository_owner_id' => '10387667',
+        ]);
+
+        $publisher = model(TrustedPublisherModel::class)->forFeed($this->feedId)[0];
+        $this->assertNull($publisher['workflow']);
+    }
+
     public function testARepositoryNotShapedLikeOwnerSlashNameIsRejected(): void
     {
         $this->postWithCsrf('admin/feeds/' . $this->feedId . '/publishers', [
