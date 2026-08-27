@@ -4,283 +4,220 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $this->renderSection('title') ?: 'Pépite' ?></title>
+    <link rel="stylesheet" href="<?= base_url('vendor/bootstrap/bootstrap.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('vendor/bootstrap-icons/bootstrap-icons.min.css') ?>">
     <style>
+        /* Pépite's own palette, bridged onto Bootstrap's CSS variable API
+           (5.3+) rather than Bootstrap's default blue. Vendored locally —
+           see public/vendor/NOTICE.md — so nothing here reaches a CDN, and
+           dark mode follows the OS the same way it always has: a media
+           query, not a toggle or a data-attribute that needs JS on load. */
         :root {
-            --bg: #fbfaf7;
-            --fg: #1c1a17;
-            --muted: #6b6459;
-            --line: #e3ded4;
-            --accent: #a8791f;
-            --accent-fg: #fff;
-            --surface: #fff;
-            --surface-2: #f4f1ea;
-            --danger: #b3341f;
-            --danger-fg: #fff;
-            --ok: #2f7d4f;
-            --shadow: 0 1px 2px rgba(20, 16, 8, .06);
+            --pepite-accent: #a8791f;
+            --pepite-accent-rgb: 168, 121, 31;
+            --pepite-ok: #2f7d4f;
+            --pepite-ok-rgb: 47, 125, 79;
+            --pepite-danger: #b3341f;
+            --pepite-danger-rgb: 179, 52, 31;
+            /* Stays this warm amber in both themes, deliberately — accent
+               already carries "brand/action" and switches to blue at night,
+               so warning needs its own fixed identity to still read as
+               "pay attention" rather than as another action button. */
+            --pepite-warning: #a8791f;
+            --pepite-warning-rgb: 168, 121, 31;
+
+            --bs-body-bg: #fbfaf7;
+            --bs-body-color: #1c1a17;
+            --bs-emphasis-color: #1c1a17;
+            --bs-secondary-color: #6b6459;
+            --bs-tertiary-bg: #f4f1ea;
+            --bs-border-color: #e3ded4;
+            --bs-border-color-translucent: #e3ded4;
+
+            --bs-primary: var(--pepite-accent);
+            --bs-primary-rgb: var(--pepite-accent-rgb);
+            --bs-link-color: var(--pepite-accent);
+            --bs-link-color-rgb: var(--pepite-accent-rgb);
+            --bs-link-hover-color: var(--pepite-accent);
+            --bs-link-hover-color-rgb: var(--pepite-accent-rgb);
+            --bs-code-color: var(--pepite-accent);
+            --bs-success: var(--pepite-ok);
+            --bs-success-rgb: var(--pepite-ok-rgb);
+            --bs-danger: var(--pepite-danger);
+            --bs-danger-rgb: var(--pepite-danger-rgb);
+            --bs-warning: var(--pepite-warning);
+            --bs-warning-rgb: var(--pepite-warning-rgb);
+
+            --bs-card-bg: #fff;
+            --bs-card-border-color: var(--bs-border-color);
+            --bs-card-cap-bg: var(--bs-tertiary-bg);
+            --bs-table-color: var(--bs-body-color);
+            --bs-table-bg: transparent;
+            --bs-table-border-color: var(--bs-border-color);
+            --bs-table-hover-bg: var(--bs-tertiary-bg);
+
+            font-size: 16px;
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #14171c;
-                --fg: #e6e9ee;
-                --muted: #8c93a1;
-                --line: #2b3037;
-                --accent: #5b9cf6;
-                --accent-fg: #0b1220;
-                --surface: #1b1f26;
-                --surface-2: #21252c;
-                --danger: #e0685a;
-                --danger-fg: #1c1a17;
-                --ok: #6bc48f;
-                --shadow: 0 1px 3px rgba(0, 0, 0, .35);
-            }
-        }
+                --pepite-accent: #5b9cf6;
+                --pepite-accent-rgb: 91, 156, 246;
+                --pepite-ok: #6bc48f;
+                --pepite-ok-rgb: 107, 196, 143;
+                --pepite-danger: #e0685a;
+                --pepite-danger-rgb: 224, 104, 90;
 
-        * { box-sizing: border-box; }
+                --bs-body-bg: #14171c;
+                --bs-body-color: #e6e9ee;
+                --bs-emphasis-color: #f4f6f8;
+                --bs-secondary-color: #8c93a1;
+                --bs-tertiary-bg: #21252c;
+                --bs-border-color: #2b3037;
+                --bs-border-color-translucent: #2b3037;
+
+                --bs-card-bg: #1b1f26;
+                --bs-heading-color: #e6e9ee;
+            }
+
+            .navbar, .card { color-scheme: dark; }
+        }
 
         /* Column layout so the footer sits at the bottom on short pages
            (the login screen) without floating over long ones. */
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg);
-            color: var(--fg);
-            font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+        body { min-height: 100vh; display: flex; flex-direction: column; }
+        main.site { flex: 1 0 auto; max-width: 62rem; }
+
+        /* Bootstrap's navbar assumes a light background by default and bakes
+           that into --bs-navbar-color rather than reading --bs-body-color,
+           so in dark mode the nav text stayed dark-on-dark — nearly
+           invisible — until this pinned it to the same tokens as the rest
+           of the page. */
+        .navbar {
+            --bs-navbar-color: var(--bs-secondary-color);
+            --bs-navbar-hover-color: var(--bs-primary);
+            --bs-navbar-active-color: var(--bs-body-color);
+            --bs-navbar-brand-color: var(--bs-body-color);
+            --bs-navbar-brand-hover-color: var(--bs-primary);
+            --bs-navbar-toggler-border-color: var(--bs-border-color);
         }
+        .navbar-brand { font-weight: 700; }
+        .navbar .app-version { font-size: .75rem; color: var(--bs-secondary-color); }
 
-
-        h1, h2, h3 { line-height: 1.25; }
-        h1 { font-size: 1.6rem; margin: 0 0 1rem; }
-        h2 { font-size: 1.15rem; }
-
-        header.site {
-            border-bottom: 1px solid var(--line);
-            padding: .85rem 1.5rem;
-            display: flex;
-            align-items: baseline;
-            gap: 1rem;
-            background: var(--surface);
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+        /* Bootstrap bakes each interactive component's own colour into a
+           local custom property rather than reading --bs-primary at the
+           root — confirmed in the browser, not assumed: badges and plain
+           links pick up the palette above for free, buttons/alerts/focus
+           rings do not. These override the rendered property directly,
+           which works regardless of which internal variable a given
+           component actually reads. */
+        .btn-primary { color: #fff; background-color: var(--pepite-accent); border-color: var(--pepite-accent); }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            color: #fff;
+            background-color: color-mix(in srgb, var(--pepite-accent) 85%, black);
+            border-color: color-mix(in srgb, var(--pepite-accent) 80%, black);
         }
-
-        header.site a.brand {
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--fg);
-            text-decoration: none;
+        .btn-outline-primary { color: var(--pepite-accent); border-color: var(--pepite-accent); }
+        .btn-outline-primary:hover, .btn-outline-primary:focus, .btn-outline-primary:active {
+            color: #fff; background-color: var(--pepite-accent); border-color: var(--pepite-accent);
         }
+        .btn-danger { color: #fff; background-color: var(--pepite-danger); border-color: var(--pepite-danger); }
+        .btn-danger:hover, .btn-danger:focus { background-color: color-mix(in srgb, var(--pepite-danger) 85%, black); border-color: color-mix(in srgb, var(--pepite-danger) 80%, black); }
+        .btn-outline-danger { color: var(--pepite-danger); border-color: var(--pepite-danger); }
+        .btn-outline-danger:hover, .btn-outline-danger:focus { color: #fff; background-color: var(--pepite-danger); border-color: var(--pepite-danger); }
+        .btn-success { color: #fff; background-color: var(--pepite-ok); border-color: var(--pepite-ok); }
+        .btn-outline-success { color: var(--pepite-ok); border-color: var(--pepite-ok); }
+        .btn-outline-success:hover, .btn-outline-success:focus { color: #fff; background-color: var(--pepite-ok); border-color: var(--pepite-ok); }
+        .btn-warning { color: #fff; background-color: var(--pepite-warning); border-color: var(--pepite-warning); }
+        .btn-warning:hover, .btn-warning:focus { color: #fff; background-color: color-mix(in srgb, var(--pepite-warning) 85%, black); border-color: color-mix(in srgb, var(--pepite-warning) 80%, black); }
+        .btn-outline-warning { color: var(--pepite-warning); border-color: var(--pepite-warning); }
+        .btn-outline-warning:hover, .btn-outline-warning:focus { color: #fff; background-color: var(--pepite-warning); border-color: var(--pepite-warning); }
 
-        header.site .version {
-            color: var(--muted);
-            font-size: .75rem;
+        .alert-primary { color: var(--pepite-accent); background-color: rgba(var(--pepite-accent-rgb), .12); border-color: rgba(var(--pepite-accent-rgb), .3); }
+        .alert-success { color: var(--pepite-ok); background-color: rgba(var(--pepite-ok-rgb), .12); border-color: rgba(var(--pepite-ok-rgb), .3); }
+        .alert-danger  { color: var(--pepite-danger); background-color: rgba(var(--pepite-danger-rgb), .12); border-color: rgba(var(--pepite-danger-rgb), .3); }
+        .alert-warning { color: var(--pepite-warning); background-color: rgba(168, 121, 31, .12); border-color: rgba(168, 121, 31, .3); }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--pepite-accent);
+            box-shadow: 0 0 0 .25rem rgba(var(--pepite-accent-rgb), .25);
         }
-
-        header.site nav {
-            margin-left: auto;
-            display: flex;
-            gap: 1.25rem;
-            align-items: center;
-        }
-
-        header.site nav a { color: var(--muted); text-decoration: none; font-size: .95rem; }
-        header.site nav a:hover { color: var(--accent); }
-
-        main.site { flex: 1 0 auto; max-width: 62rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; width: 100%; }
-
-        a { color: var(--accent); }
-
-        p.lead { color: var(--muted); margin-top: -.5rem; }
-
-        .toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        table { border-collapse: collapse; width: 100%; font-size: .95rem; }
-        th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
-        th { color: var(--muted); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .02em; }
-        tbody tr:hover { background: var(--surface-2); }
-        td.actions { text-align: right; white-space: nowrap; }
-        td.actions form { display: inline-block; margin-left: .4rem; }
-
-        code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .92em; }
-        pre { background: var(--surface-2); padding: .75rem 1rem; border-radius: 6px; overflow-x: auto; }
-
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--line);
-            border-radius: 10px;
-            padding: 1.25rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 1rem;
-        }
-
-        /* The update panel (forgelab-me/ci4-updater) pairs some cards inside
-           Bootstrap .row/.col-md-6 wrappers this layout doesn't style, so
-           `.card + .card` alone wouldn't reach them — a card always carries
-           its own bottom margin instead, wrapper or no wrapper. */
-
-        label { display: block; margin: .9rem 0 .3rem; font-size: .92rem; }
-        label:first-child { margin-top: 0; }
-
-        input[type="text"], input[type="email"], input[type="password"], input[type="url"],
-        input[type="number"], input[type="search"], select, textarea {
-            width: 100%;
-            padding: .5rem .65rem;
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            background: var(--bg);
-            color: var(--fg);
-            font: inherit;
-        }
-
-        input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-        label.checkbox { display: flex; align-items: center; gap: .5rem; font-size: .92rem; }
-        label.checkbox input { width: auto; }
-
-        button, .button {
-            display: inline-block;
-            font: inherit;
-            font-size: .92rem;
-            padding: .45rem .9rem;
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            background: var(--surface);
-            color: var(--fg);
-            cursor: pointer;
-            text-decoration: none;
-            line-height: 1.4;
-        }
-
-        button:hover, .button:hover { border-color: var(--accent); color: var(--accent); }
-
-        button.primary, .button.primary {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: var(--accent-fg);
-        }
-        button.primary:hover, .button.primary:hover { filter: brightness(1.08); color: var(--accent-fg); }
-
-        button.danger, .button.danger { color: var(--danger); border-color: var(--danger); }
-        button.danger:hover, .button.danger:hover { background: var(--danger); color: var(--danger-fg); }
-
-        button.small, .button.small { padding: .25rem .6rem; font-size: .82rem; }
-
-        .badge {
-            display: inline-block;
-            font-size: .75rem;
-            font-weight: 600;
-            padding: .1rem .5rem;
-            border-radius: 99px;
-            border: 1px solid var(--line);
-            color: var(--muted);
-        }
-        .badge.ok { color: var(--ok); border-color: var(--ok); }
-        .badge.warn { color: var(--danger); border-color: var(--danger); }
-        .badge.accent { color: var(--accent); border-color: var(--accent); }
-
-        .flash {
-            background: var(--surface-2);
-            border: 1px solid var(--line);
-            border-left: 3px solid var(--ok);
-            border-radius: 6px;
-            padding: .6rem 1rem;
-            margin-bottom: 1.25rem;
-            font-size: .92rem;
-        }
-
-        .errors {
-            border: 1px solid var(--danger);
-            border-left: 3px solid var(--danger);
-            border-radius: 6px;
-            padding: .75rem 1rem;
-            margin-bottom: 1rem;
-            font-size: .92rem;
-        }
-        .errors p { margin: .25rem 0; }
-
-        .muted { color: var(--muted); }
-        .back-link { display: inline-block; margin-bottom: 1rem; font-size: .9rem; color: var(--muted); text-decoration: none; }
-        .back-link:hover { color: var(--accent); }
-
-        footer.site {
-            border-top: 1px solid var(--line);
-            padding: 1.25rem 1.5rem;
-            color: var(--muted);
-            font-size: .82rem;
-        }
-        footer.site .row {
-            max-width: 62rem;
-            margin: 0 auto;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: .5rem;
-        }
-        footer.site a { color: var(--muted); text-decoration: none; }
-        footer.site a:hover { color: var(--accent); text-decoration: underline; }
-        footer.site .github-link { display: inline-flex; align-items: center; gap: .4rem; }
+        .form-check-input:checked { background-color: var(--pepite-accent); border-color: var(--pepite-accent); }
+        .form-check-input:focus { border-color: var(--pepite-accent); box-shadow: 0 0 0 .25rem rgba(var(--pepite-accent-rgb), .25); }
+        .card { box-shadow: 0 1px 2px rgba(20, 16, 8, .06); }
+        code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+        .back-link { font-size: .9rem; }
+        footer.site a { color: var(--bs-secondary-color); text-decoration: none; }
+        footer.site a:hover { color: var(--bs-primary); text-decoration: underline; }
     </style>
     <?= $this->renderSection('head') ?>
 </head>
 <body>
-<header class="site">
-    <a class="brand" href="<?= site_url('/') ?>">Pépite</a>
-    <span class="version"><?= esc(\Config\Updater::VERSION) ?></span>
-    <nav>
-        <a href="<?= site_url('/') ?>">Feeds</a>
-        <?php if (function_exists('auth') && auth()->loggedIn()): ?>
-            <a href="<?= site_url('admin/feeds') ?>">Admin feeds</a>
-            <a href="<?= site_url('admin/keys') ?>">API keys</a>
-            <a href="<?= site_url('admin/users') ?>">Admins</a>
-            <a href="<?= site_url('admin/updates') ?>">Updates</a>
-            <a href="<?= site_url('logout') ?>">Log out</a>
-        <?php else: ?>
-            <a href="<?= site_url('login') ?>">Log in</a>
-        <?php endif ?>
-    </nav>
-</header>
+<nav class="navbar navbar-expand-md border-bottom sticky-top" style="background: var(--bs-card-bg);">
+    <div class="container-md">
+        <a class="navbar-brand" href="<?= site_url('/') ?>">
+            Pépite <span class="app-version"><?= esc(\Config\Updater::VERSION) ?></span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav-main">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="nav-main">
+            <ul class="navbar-nav gap-md-2">
+                <li class="nav-item"><a class="nav-link" href="<?= site_url('/') ?>">Feeds</a></li>
+                <?php if (function_exists('auth') && auth()->loggedIn()): ?>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/feeds') ?>">Admin feeds</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/keys') ?>">API keys</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/users') ?>">Admins</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/updates') ?>">Updates</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Log out</a></li>
+                <?php else: ?>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('login') ?>">Log in</a></li>
+                <?php endif ?>
+            </ul>
+        </div>
+    </div>
+</nav>
 
-<main class="site">
-    <?php if (session()->getFlashdata('message')): ?>
-        <div class="flash"><?= esc(session()->getFlashdata('message')) ?></div>
+<main class="site container-md py-4">
+    <?php
+        $flashMessage = session()->getFlashdata('message') ?? session()->getFlashdata('success');
+        $flashWarning = session()->getFlashdata('warning');
+        $flashError   = session()->getFlashdata('error');
+    ?>
+    <?php if ($flashMessage): ?>
+        <div class="alert alert-success d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill flex-shrink-0"></i><div><?= esc($flashMessage) ?></div>
+        </div>
+    <?php endif ?>
+    <?php if ($flashWarning): ?>
+        <div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i><div><?= esc($flashWarning) ?></div>
+        </div>
     <?php endif ?>
     <?php // The update panel (forgelab-me/ci4-updater) reports every outcome —
           // applied, failed download, rollback, refused signature — as
           // 'error'/'success' flashdata and a redirect. It renders none of
           // it itself: skipping these two silently swallows the result. ?>
-    <?php if ($flash = session()->getFlashdata('success')): ?>
-        <div class="flash"><?= esc($flash) ?></div>
-    <?php endif ?>
-    <?php if ($flash = session()->getFlashdata('error')): ?>
-        <div class="errors"><?= esc($flash) ?></div>
+    <?php if ($flashError): ?>
+        <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-octagon-fill flex-shrink-0"></i><div><?= esc($flashError) ?></div>
+        </div>
     <?php endif ?>
     <?php // `content` is used by the updater panel, `main` by Shield's views. ?>
     <?= $this->renderSection('content') ?>
     <?= $this->renderSection('main') ?>
 </main>
 
-<footer class="site">
-    <div class="row">
-        <span>&copy; <?= date('Y') ?> ForgeLab — MIT</span>
-        <a href="https://github.com/forgelab-me/pepite" target="_blank" rel="noopener noreferrer" class="github-link">
-            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-            forgelab-me/pepite
+<footer class="site border-top py-3">
+    <div class="container-md d-flex flex-wrap justify-content-between gap-2">
+        <span class="text-body-secondary">&copy; <?= date('Y') ?> ForgeLab — MIT</span>
+        <a href="https://github.com/forgelab-me/pepite" target="_blank" rel="noopener noreferrer">
+            <i class="bi bi-github me-1"></i>forgelab-me/pepite
         </a>
     </div>
 </footer>
 
+<script src="<?= base_url('vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

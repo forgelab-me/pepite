@@ -2,13 +2,15 @@
 <?= $this->section('title') ?>Key created — Admin<?= $this->endSection() ?>
 <?= $this->section('content') ?>
 
-<h1>Key issued</h1>
-<p>It will never be shown again — only its hash is kept.</p>
+<h1 class="h3">Key issued</h1>
+<p class="text-body-secondary">It will never be shown again — only its hash is kept.</p>
 
 <div class="card">
-    <code style="font-size:1.1rem; word-break:break-all;"><?= esc($token) ?></code>
+    <div class="card-body">
+        <code class="fs-5 text-break"><?= esc($token) ?></code>
+    </div>
 </div>
 
-<p style="margin-top:1rem;"><a href="<?= site_url('admin/keys') ?>">&larr; API keys</a></p>
+<a class="d-inline-block mt-3 text-decoration-none" href="<?= site_url('admin/keys') ?>">&larr; API keys</a>
 
 <?= $this->endSection() ?>

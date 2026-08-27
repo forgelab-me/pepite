@@ -46,9 +46,15 @@ class Auth extends ShieldAuth
      * --------------------------------------------------------------------
      */
     public array $views = [
-        'login'                       => '\CodeIgniter\Shield\Views\login',
-        'register'                    => '\CodeIgniter\Shield\Views\register',
-        'layout'                      => '\CodeIgniter\Shield\Views\layout',
+        'login'    => '\CodeIgniter\Shield\Views\login',
+        'register' => '\CodeIgniter\Shield\Views\register',
+        // Shield's own layout pulls Bootstrap from a CDN and renders in
+        // isolation from the rest of the app — a login page that looks like
+        // nothing else here. Its login/register views are plain Bootstrap
+        // markup already (container, card, alert), so pointing this at
+        // Pépite's own layout is enough to make them match; nothing in
+        // those two views needs to change.
+        'layout'                      => 'layout/main',
         'action_email_2fa'            => '\CodeIgniter\Shield\Views\email_2fa_show',
         'action_email_2fa_verify'     => '\CodeIgniter\Shield\Views\email_2fa_verify',
         'action_email_2fa_email'      => '\CodeIgniter\Shield\Views\Email\email_2fa_email',

@@ -9,9 +9,38 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
-## [1.7.0] - 2026-08-26
+## [1.8.0] - 2026-08-27
 
 ### Changed
+
+- **The whole UI now runs on Bootstrap 5.3**, vendored locally rather than
+  hand-rolled CSS — admin console, public browsing, the installer, and
+  Shield's login/register pages, which previously pulled Bootstrap from a
+  CDN into a layout of their own and looked like a different application
+  entirely. One root cause behind two problems: the update panel shipped by
+  `forgelab-me/ci4-updater` is itself written in Bootstrap classes, so
+  without Bootstrap loaded most of it rendered unstyled, and Shield's
+  bundled login page extended its own package layout instead of Pépite's.
+  Both are now the same design system — `app/Config/Auth.php` points
+  Shield's `layout` view at `layout/main`, and the update panel is
+  published (`updater:setup --views`) and re-themed to use Pépite's accent
+  instead of appearing broken.
+- **Bootstrap and Bootstrap Icons are committed under `public/vendor/`**,
+  not loaded from a CDN — the admin console and public pages still render
+  with no third-party network request, including on a host with no outbound
+  internet access at all. See [public/vendor/NOTICE.md](src/public/vendor/NOTICE.md)
+  for versions and how to update them.
+- Pépite's own palette (the warm accent, the light/dark pair) now bridges
+  onto Bootstrap's CSS variable API instead of replacing Bootstrap's blue —
+  dark mode still follows the OS via a media query, not a toggle or a
+  `data-bs-theme` attribute that would need JavaScript on load.
+
+### Upgrading
+
+Nothing to migrate. If `app/Views/admin/updates.php` was already published
+and hand-modified, `php spark updater:setup --views -f` was run to update it
+here and will overwrite local customisations — port them across by hand if
+that applies to your install.
 
 - **The maintenance window is now automatic, not a manual toggle.** Pépite's
   own `App\Filters\Maintenance` and `pepite:maintenance on|off` predated

@@ -2,25 +2,46 @@
 <?= $this->section('title') ?>New feed — Admin<?= $this->endSection() ?>
 <?= $this->section('content') ?>
 
-<a class="back-link" href="<?= site_url('admin/feeds') ?>">&larr; Feeds</a>
-<h1>New feed</h1>
+<a class="d-inline-block mb-3 text-body-secondary text-decoration-none" href="<?= site_url('admin/feeds') ?>">&larr; Feeds</a>
+<h1 class="h3">New feed</h1>
 
 <?php if ($errors !== []): ?>
-    <div class="errors"><?php foreach ($errors as $error): ?><p><?= esc($error) ?></p><?php endforeach ?></div>
+    <div class="alert alert-danger"><?php foreach ($errors as $error): ?><p class="mb-0"><?= esc($error) ?></p><?php endforeach ?></div>
 <?php endif ?>
 
-<form method="post" action="<?= site_url('admin/feeds') ?>" class="card">
-    <?= csrf_field() ?>
+<div class="card">
+    <div class="card-body">
+        <form method="post" action="<?= site_url('admin/feeds') ?>">
+            <?= csrf_field() ?>
 
-    <label>Slug<input type="text" name="slug" required></label>
-    <label>Name<input type="text" name="name" required></label>
-    <label>Description<textarea name="description" rows="2"></textarea></label>
-    <label class="checkbox"><input type="checkbox" name="private" value="1"> Private (read via API key)</label>
-    <label class="checkbox"><input type="checkbox" name="no_new_packages" value="1"> Refuse new identifiers</label>
-    <label>Accepted package types (comma-separated, empty = all)
-        <input type="text" name="package_types"></label>
+            <div class="mb-3">
+                <label class="form-label" for="slug">Slug</label>
+                <input class="form-control" type="text" id="slug" name="slug" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="name">Name</label>
+                <input class="form-control" type="text" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+            </div>
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="private" name="private" value="1">
+                <label class="form-check-label" for="private">Private (read via API key)</label>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="no_new_packages" name="no_new_packages" value="1">
+                <label class="form-check-label" for="no_new_packages">Refuse new identifiers</label>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="package_types">Accepted package types (comma-separated, empty = all)</label>
+                <input class="form-control" type="text" id="package_types" name="package_types">
+            </div>
 
-    <p style="margin-top:1.25rem;"><button type="submit" class="primary">Create</button></p>
-</form>
+            <button type="submit" class="btn btn-primary">Create</button>
+        </form>
+    </div>
+</div>
 
 <?= $this->endSection() ?>
