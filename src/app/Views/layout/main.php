@@ -164,6 +164,7 @@
         <div class="collapse navbar-collapse justify-content-end" id="nav-main">
             <ul class="navbar-nav gap-md-2">
                 <li class="nav-item"><a class="nav-link" href="<?= site_url('/') ?>">Feeds</a></li>
+                <li class="nav-item"><a class="nav-link" href="<?= site_url('search') ?>">Search</a></li>
                 <?php if (function_exists('auth') && auth()->loggedIn()): ?>
                     <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/feeds') ?>">Admin feeds</a></li>
                     <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/keys') ?>">API keys</a></li>

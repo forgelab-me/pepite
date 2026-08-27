@@ -9,9 +9,53 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
-## [1.8.0] - 2026-08-27
+## [1.9.0] - 2026-08-27
 
-### Changed
+### Added
+
+- **The package page shows what was already being stored and never
+  displayed** — authors, owners, license (linked when the nuspec gives a
+  URL), project and repository links, copyright, package size, the SHA-512
+  hash, tags as clickable badges that feed straight into the existing
+  search, and the icon, when the package ships one. None of this needed a
+  migration: `package_versions` already carried every column, parsed from
+  the nuspec at push time and simply never read back.
+- **An install snippet**, `.NET CLI` and `PackageReference` tabs, each with
+  a copy button — the syntax was previously left for whoever's installing to
+  remember or look up elsewhere.
+- **Dependencies are grouped by target framework** instead of one flat
+  table, matching nuget.org and BaGet.
+- **Versions list downloads and publish date per version** — both already
+  tracked (`package_versions.downloads`/`published_at`), only ever surfaced
+  on the admin side before this.
+- **"Used by"** — other packages in the same feed that depend on this one.
+  New query (`PackageDependencyModel::usedBy()`), no new table.
+- **The feed listing** shows an icon (or a generic placeholder), a truncated
+  description and up to five tags per package, and can be sorted by name as
+  well as by downloads (`?sort=name`). `PackageModel::search()` pulls the
+  latest listed version's icon/description/tags via a correlated subquery
+  rather than a second query per row.
+- **An Atom feed of recently published versions**, per feed —
+  `browse/{slug}/recent.atom`, linked from the feed page via the usual RSS
+  icon. The last 30 listed versions across every package in that feed,
+  newest first, for whoever would rather watch a feed reader than come back
+  and check. A private feed 404s here the same as it does everywhere else.
+- **Global search**, from a search box on the home page and a new "Search"
+  nav link — one query across every *public* feed at once, instead of
+  having to already be inside the right one. Results name which feed each
+  hit came from; `PackageModel::search()`'s feed filter is now optional
+  rather than required, so the existing per-feed search and the new global
+  one share the same query and the same result partial
+  (`web/packages/_list.php`).
+- **A prerelease badge** next to any version that is one — the package
+  page's header, its versions list, and the feed listing — reading the
+  `is_prerelease` column that publishing already computes and stores.
+
+### Upgrading
+
+Nothing to migrate — every field this release surfaces was already stored,
+and the new features (Atom feed, global search, prerelease badge) add no
+tables or columns either.
 
 - **The whole UI now runs on Bootstrap 5.3**, vendored locally rather than
   hand-rolled CSS — admin console, public browsing, the installer, and

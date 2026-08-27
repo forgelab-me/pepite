@@ -11,7 +11,9 @@ $routes->post('install', 'Install::store', ['filter' => 'csrf']);
 
 // Public browsing, public feeds only.
 $routes->get('/', 'Web\Feeds::index');
+$routes->get('search', 'Web\Feeds::search');
 $routes->get('browse/(:segment)', 'Web\Feeds::show/$1');
+$routes->get('browse/(:segment)/recent.atom', 'Web\Feeds::recent/$1');
 $routes->get('browse/(:segment)/(:segment)', 'Web\Packages::show/$1/$2');
 $routes->get('browse/(:segment)/(:segment)/(:segment)', 'Web\Packages::show/$1/$2/$3');
 

@@ -4,6 +4,13 @@
 
 <h1 class="h3 mb-3">Feeds</h1>
 
+<form method="get" action="<?= site_url('search') ?>" class="mb-3">
+    <div class="input-group" style="max-width: 24rem;">
+        <input type="search" class="form-control" name="q" placeholder="Search every feed" required>
+        <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+
 <?php if ($feeds === []): ?>
     <p class="text-body-secondary">No public feed yet.</p>
 <?php else: ?>

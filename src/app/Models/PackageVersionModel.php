@@ -139,4 +139,29 @@ final class PackageVersionModel extends Model
         $this->builder()->where('id', $versionId)->increment('downloads');
         model(PackageModel::class)->builder()->where('id', $packageId)->increment('total_downloads');
     }
+
+    /**
+     * The most recently published versions in a feed, across every package
+     * — "what's new here", newest first. Ordered on when it landed on this
+     * server (created_at), not the nuspec's own published date: the latter
+     * is whatever the pusher's build put there and is not trustworthy as a
+     * freshness signal the way an insert timestamp this server wrote is.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentInFeed(int $feedId, int $limit = 30): array
+    {
+        $versions = $this->db->prefixTable('package_versions');
+        $packages = $this->db->prefixTable('packages');
+
+        return $this->builder()
+            ->select($versions . '.*, p.package_id, p.package_id_lower')
+            ->join($packages . ' p', 'p.id = ' . $versions . '.package_id')
+            ->where('p.feed_id', $feedId)
+            ->where($versions . '.is_listed', 1)
+            ->orderBy($versions . '.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResultArray();
+    }
 }
