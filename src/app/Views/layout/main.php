@@ -27,10 +27,19 @@
             --pepite-warning-rgb: 168, 121, 31;
 
             --bs-body-bg: #fbfaf7;
+            --bs-body-bg-rgb: 251, 250, 247;
             --bs-body-color: #1c1a17;
+            --bs-body-color-rgb: 28, 26, 23;
             --bs-emphasis-color: #1c1a17;
+            --bs-emphasis-color-rgb: 28, 26, 23;
             --bs-secondary-color: #6b6459;
+            --bs-secondary-color-rgb: 107, 100, 89;
             --bs-tertiary-bg: #f4f1ea;
+            /* Every bg-*/text-* utility with an opacity variant (bg-body-tertiary
+               included) reads the -rgb companion, not the hex variable above —
+               forgetting it here left those utilities on Bootstrap's stock light
+               grey even in dark mode, unreadable against dark-mode text. */
+            --bs-tertiary-bg-rgb: 244, 241, 234;
             --bs-border-color: #e3ded4;
             --bs-border-color-translucent: #e3ded4;
 
@@ -69,10 +78,15 @@
                 --pepite-danger-rgb: 224, 104, 90;
 
                 --bs-body-bg: #14171c;
+                --bs-body-bg-rgb: 20, 23, 28;
                 --bs-body-color: #e6e9ee;
+                --bs-body-color-rgb: 230, 233, 238;
                 --bs-emphasis-color: #f4f6f8;
+                --bs-emphasis-color-rgb: 244, 246, 248;
                 --bs-secondary-color: #8c93a1;
+                --bs-secondary-color-rgb: 140, 147, 161;
                 --bs-tertiary-bg: #21252c;
+                --bs-tertiary-bg-rgb: 33, 37, 44;
                 --bs-border-color: #2b3037;
                 --bs-border-color-translucent: #2b3037;
 

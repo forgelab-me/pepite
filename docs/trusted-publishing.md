@@ -75,11 +75,25 @@ jobs:
       - name: Exchange the GitHub identity for a publish key
         id: auth
         run: |
+          set -eu
           OIDC=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pepite.example.com" | jq -r .value)
-          KEY=$(curl -sS --fail-with-body -X POST \
+
+          # Status and body kept apart, so a refusal shows what Pépite actually
+          # said — piping curl straight into jq turns every failure into a
+          # parse error and loses the message that explains it.
+          STATUS=$(curl -sS -X POST \
             -H "Authorization: Bearer $OIDC" \
-            https://pepite.example.com/feeds/default/api/v2/publish/token | jq -r .token)
+            -o "$RUNNER_TEMP/mint.json" -w '%{http_code}' \
+            https://pepite.example.com/feeds/default/api/v2/publish/token)
+
+          if [ "$STATUS" != 201 ]; then
+            echo "::error::Pépite refused to mint a publish key (HTTP $STATUS)"
+            cat "$RUNNER_TEMP/mint.json"
+            exit 1
+          fi
+
+          KEY=$(jq -r .token < "$RUNNER_TEMP/mint.json")
           echo "::add-mask::$KEY"
           echo "key=$KEY" >> "$GITHUB_OUTPUT"
 
@@ -98,9 +112,16 @@ publish:
       aud: https://pepite.example.com
   script:
     - >
-      KEY=$(curl -sS --fail-with-body -X POST
-      -H "Authorization: Bearer $OIDC_TOKEN"
-      https://pepite.example.com/feeds/default/api/v2/publish/token | jq -r .token)
+      STATUS=$(curl -sS -X POST -H "Authorization: Bearer $OIDC_TOKEN"
+      -o mint.json -w '%{http_code}'
+      https://pepite.example.com/feeds/default/api/v2/publish/token)
+    - |
+      if [ "$STATUS" != "201" ]; then
+        echo "Pépite refused to mint a publish key (HTTP $STATUS)"
+        cat mint.json
+        exit 1
+      fi
+    - KEY=$(jq -r .token < mint.json)
     - dotnet nuget push package.nupkg -s https://pepite.example.com/feeds/default/v3/index.json -k "$KEY"
 ```
 

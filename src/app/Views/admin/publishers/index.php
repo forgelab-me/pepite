@@ -139,11 +139,33 @@ jobs:
       - name: Exchange the GitHub identity for a publish key
         id: auth
         run: |
+          set -eu
           OIDC=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&amp;audience=<?= esc($audience) ?>" | jq -r .value)
-          KEY=$(curl -sS --fail-with-body -X POST \
+
+          if [ -z "$OIDC" ] || [ "$OIDC" = null ]; then
+            echo "::error::GitHub minted no identity token — check that the job has id-token: write."
+            exit 1
+          fi
+
+          # Status and body kept apart, so a refusal shows what Pépite actually
+          # said — piping curl straight into jq turns every failure into a
+          # parse error and loses the message that explains it.
+          STATUS=$(curl -sS -X POST \
             -H "Authorization: Bearer $OIDC" \
-            <?= esc($audience) ?>/feeds/<?= esc($feed['slug']) ?>/api/v2/publish/token | jq -r .token)
+            -o "$RUNNER_TEMP/mint.json" -w '%{http_code}' \
+            <?= esc($audience) ?>/feeds/<?= esc($feed['slug']) ?>/api/v2/publish/token)
+
+          if [ "$STATUS" != 201 ]; then
+            echo "::error::Pépite refused to mint a publish key (HTTP $STATUS) — is the trusted publisher configured for this repo/environment on the feed's Publishers page?"
+            cat "$RUNNER_TEMP/mint.json"
+            echo
+            exit 1
+          fi
+
+          KEY=$(jq -r .token &lt; "$RUNNER_TEMP/mint.json")
+          rm -f "$RUNNER_TEMP/mint.json"
+
           echo "::add-mask::$KEY"
           echo "key=$KEY" &gt;&gt; "$GITHUB_OUTPUT"
 
@@ -172,9 +194,16 @@ jobs:
       aud: <?= esc($audience) ?>
   script:
     - >
-      KEY=$(curl -sS --fail-with-body -X POST
-      -H "Authorization: Bearer $OIDC_TOKEN"
-      <?= esc($audience) ?>/feeds/<?= esc($feed['slug']) ?>/api/v2/publish/token | jq -r .token)
+      STATUS=$(curl -sS -X POST -H "Authorization: Bearer $OIDC_TOKEN"
+      -o mint.json -w '%{http_code}'
+      <?= esc($audience) ?>/feeds/<?= esc($feed['slug']) ?>/api/v2/publish/token)
+    - |
+      if [ "$STATUS" != "201" ]; then
+        echo "Pépite refused to mint a publish key (HTTP $STATUS) — is the trusted publisher configured for this repo/environment on the feed's Publishers page?"
+        cat mint.json
+        exit 1
+      fi
+    - KEY=$(jq -r .token &lt; mint.json) &amp;&amp; rm -f mint.json
     - dotnet nuget push package.nupkg -s <?= esc($audience) ?>/feeds/<?= esc($feed['slug']) ?>/v3/index.json -k "$KEY"</pre>
     </div>
 </div>

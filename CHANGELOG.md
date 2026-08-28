@@ -9,6 +9,37 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.9.1] - 2026-08-28
+
+### Fixed
+
+- **Illegible text in dark mode** on any `bg-body-tertiary` block — the
+  Trusted Publishing setup snippet on a feed's Publishers page was the one
+  that got reported, light-grey body text on a background stuck at
+  Bootstrap's stock near-white. Root cause: `layout/main.php` overrides
+  `--bs-tertiary-bg`, but Bootstrap's opacity-aware utilities
+  (`.bg-body-tertiary` among them) read the separate `--bs-tertiary-bg-rgb`
+  companion, which was never overridden and so stayed on Bootstrap's light
+  default in both themes. Added the missing `-rgb` companions for every hex
+  token this app overrides (`--bs-body-bg`, `--bs-body-color`,
+  `--bs-emphasis-color`, `--bs-secondary-color`, `--bs-tertiary-bg`) in
+  both the light and dark blocks.
+- **The Trusted Publishing setup snippet** (GitHub Actions and GitLab
+  CI/CD, on a feed's Publishers page and in `docs/trusted-publishing.md`)
+  now separates the mint request's HTTP status from its body instead of
+  piping straight into `jq`, so a refusal (401/403) surfaces Pépite's own
+  error message instead of failing silently and turning into a confusing
+  `dotnet nuget push` auth error two steps later. Also checks for an empty
+  OIDC token up front, with a message pointing straight at the usual cause
+  (`id-token: write` missing from the job's `permissions:`).
+
+### Upgrading
+
+Nothing to migrate. If a feed's Publishers page was screenshotted or its
+workflow snippet already copied into a repo before this release, re-copy it
+to pick up the more robust error handling — the previous version still
+works, it just fails less legibly.
+
 ## [1.9.0] - 2026-08-27
 
 ### Added
