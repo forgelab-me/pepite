@@ -9,6 +9,28 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.10.0] - 2026-09-01
+
+### Added
+
+- **`php spark pepite:purge <feed-slug> <package-id> [version]`** —
+  permanently deletes a package, or one version of it: database rows and
+  the stored `.nupkg`/`.nuspec`/icon/readme alike. Nothing else in Pépite
+  does this on purpose — a published version is meant to be immutable, and
+  unlisting only hides a version from discovery, the flat container still
+  serves it by design. Neither helps when a published file has to stop
+  existing outright, e.g. because it turns out to contain something that
+  should never have been public. Prints exactly what it is about to
+  delete and requires typing the package id back to confirm (`--yes` for
+  scripted use); dependencies declared against a deleted version are
+  removed with it.
+
+### Upgrading
+
+Nothing to migrate. This is a deliberately destructive, operator-run
+command — nothing in the app calls it, and it does not appear in the
+admin console.
+
 ## [1.9.1] - 2026-08-28
 
 ### Fixed
