@@ -9,6 +9,38 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.11.1] - 2026-09-02
+
+### Fixed
+
+- **A private feed's read access was scope-only, not feed-scoped.**
+  `App\Filters\FeedRead` authorized a Basic-auth read on a *private* feed
+  purely on the presented key carrying the `packages.read` scope string —
+  it never consulted `feed_api_key_rules`, so a key restricted to feed A
+  (via the admin console or `pepite:key --feed`) could still read every
+  *other* private feed on the instance too, since nothing about that scope
+  said which feed it was meant for. Fixed the same way
+  `PublishAuthorizer::authorizeKeyReach` already scopes pushes: a key with
+  no row in `feed_api_key_rules` stays fully unrestricted (matching a plain
+  nuget.org key), a key with one is now actually confined to the feed(s) it
+  names.
+- Documented self-service (README, README.fr): what it is, why a
+  self-service key never carries `packages.read`, and how to turn on
+  e-mail verification once a real mail transport is configured — off by
+  default on purpose, since Pépite ships with none and forcing it on would
+  silently strand registration on any deployment without one (Docker, most
+  local setups, some shared hosts).
+
+### Upgrading
+
+If a key was deliberately restricted to one feed but you were relying on
+it also reading a *different* private feed, that access is now closed —
+re-issue the key without a restriction, or add a second
+`feed_api_key_rules` row, if that access was actually wanted. Nothing else
+to migrate; registration/login rate-limiting (Shield's `AuthRates`) and the
+self-service key scopes were already in place before this release, only
+documented now.
+
 ## [1.11.0] - 2026-09-01
 
 ### Added

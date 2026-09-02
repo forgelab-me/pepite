@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\UserModel;
@@ -81,6 +82,45 @@ final class FeedReadTest extends CIUnitTestCase
             ->call('get', 'feeds/default/v3/index.json');
 
         $result->assertStatus(403);
+    }
+
+    public function testAKeyRestrictedToOneFeedCannotReadAnotherPrivateFeed(): void
+    {
+        model(FeedModel::class)->insert(['slug' => 'other', 'name' => 'Other', 'visibility' => 'private']);
+        $this->makePrivate('default');
+
+        $user  = $this->createUser('scoped@pepite.test');
+        $token = $user->generateAccessToken('test', ['packages.read']);
+
+        model(FeedApiKeyRuleModel::class)->insert([
+            'identity_id' => (int) $token->id,
+            'feed_id'     => (int) model(FeedModel::class)->findBySlug('other')['id'],
+            'created_at'  => date('Y-m-d H:i:s'),
+        ]);
+
+        $result = $this->withHeaders(['Authorization' => 'Basic ' . base64_encode('x:' . $token->raw_token)])
+            ->call('get', 'feeds/default/v3/index.json');
+
+        $result->assertStatus(403);
+    }
+
+    public function testAKeyRestrictedToOneFeedCanStillReadThatFeed(): void
+    {
+        $this->makePrivate('default');
+
+        $user  = $this->createUser('scoped2@pepite.test');
+        $token = $user->generateAccessToken('test', ['packages.read']);
+
+        model(FeedApiKeyRuleModel::class)->insert([
+            'identity_id' => (int) $token->id,
+            'feed_id'     => (int) model(FeedModel::class)->findBySlug('default')['id'],
+            'created_at'  => date('Y-m-d H:i:s'),
+        ]);
+
+        $result = $this->withHeaders(['Authorization' => 'Basic ' . base64_encode('x:' . $token->raw_token)])
+            ->call('get', 'feeds/default/v3/index.json');
+
+        $result->assertOK();
     }
 
     public function testAMalformedAuthorizationHeaderIsTreatedAsMissing(): void

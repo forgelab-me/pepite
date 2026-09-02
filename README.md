@@ -107,6 +107,7 @@ see [`tools/test-mysql.sh`](tools/test-mysql.sh) to reproduce that locally.
 | `src/app/Controllers/V3/` | The NuGet V3 protocol |
 | `src/app/Controllers/Api/` | Publishing, delisting |
 | `src/app/Controllers/Admin/` | Admin console — feeds, keys, packages |
+| `src/app/Controllers/Account/` | Self-service — keys, owned packages (any logged-in user) |
 | `src/writable/storage/` | Package blobs, outside the web root |
 
 Classes under `Libraries/Version`, `Libraries/Package` and `Libraries/Http` call none of
@@ -156,6 +157,33 @@ page in the admin console, which shows the exact YAML to paste for whichever pro
 Full guide, including how a *protected* environment can put a human approval between a push and a
 publish: **[docs/trusted-publishing.md](docs/trusted-publishing.md)**.
 
+## Third-party contributors (self-service)
+
+Registration is open by default (`Config\Auth::$allowRegistration`) — any account can push its
+own packages without an admin issuing a key for them by hand. At `/account/keys`, a logged-in
+user issues a key scoped to exactly one feed, picked from those that are both **public** and
+accept new packages (`allow_new_packages`). A feed that doesn't allow new packages has no
+self-service path to ownership at all — not through this form, not any other way — so it never
+appears in the list. `/account` lists every package the current user owns, across every feed.
+
+A self-service key never carries the `packages.read` scope, on purpose: it can push and delist,
+nothing more. See the Security section below for why.
+
+**E-mail verification is off by default** (`Config\Auth::$actions['register']` is `null`) —
+Pépite ships with no mail transport configured (`Config\Email`), and forcing verification on
+would silently strand every registration on a deployment with none (Docker, most local setups,
+some shared hosts) — the account sits pending activation, the confirmation e-mail never arrives.
+Once `Config\Email` points at a transport you've verified actually delivers, require it:
+
+```php
+public array $actions = [
+    'register' => \CodeIgniter\Shield\Authentication\Actions\EmailActivator::class,
+];
+```
+
+Registration and login are already rate-limited regardless (Shield's `AuthRates` filter, 10
+requests/minute/IP) — nothing extra to configure for that.
+
 ## Security
 
 - The admin console (`/admin/*`) is authenticated via
@@ -163,7 +191,12 @@ publish: **[docs/trusted-publishing.md](docs/trusted-publishing.md)**.
   should have access, since creating an API key or a feed grants access to publishing.
 - An unrestricted API key (no `feed_api_key_rules` row) can publish to any feed that allows new
   identifiers. Restrict a key to a feed and an identifier pattern (`Contoso.*`) as soon as it
-  leaves strictly personal use.
+  leaves strictly personal use. A key *with* a restriction is also confined to reading only the
+  feed(s) it names — `App\Filters\FeedRead` consults the same rules for a private feed's reads,
+  not just `PublishAuthorizer` for pushes.
+- Self-service keys (`/account/keys`) are scope-limited by construction — `packages.push` and
+  `packages.unlist` only, one feed, never `packages.read` — since self-service carries none of
+  the implicit vetting an admin issuing a key by hand already does.
 - `.env` is excluded from the repository — never commit real secrets there. Only `env` (the
   CI4 template) is tracked.
 - The release-signing private key (`php spark updater:keygen`) must **never** leave the machine

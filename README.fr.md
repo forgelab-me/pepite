@@ -107,6 +107,7 @@ local.
 | `src/app/Controllers/V3/` | Protocole NuGet V3 |
 | `src/app/Controllers/Api/` | Publication, délistage |
 | `src/app/Controllers/Admin/` | Console d'admin — feeds, clés, packages |
+| `src/app/Controllers/Account/` | Libre-service — clés, packages possédés (tout compte connecté) |
 | `src/writable/storage/` | Blobs des packages, hors racine web |
 
 Les classes de `Libraries/Version`, `Libraries/Package` et `Libraries/Http` n'appellent ni
@@ -158,6 +159,36 @@ de workflow précis. À configurer depuis la page **Publishers** d'un feed dans 
 complet, notamment comment un *environment* protégé peut placer une validation humaine entre un
 push et une publication : **[docs/trusted-publishing.md](docs/trusted-publishing.md)** (anglais).
 
+## Contributeurs tiers (libre-service)
+
+L'inscription est ouverte par défaut (`Config\Auth::$allowRegistration`) — n'importe quel compte
+peut pousser ses propres packages sans qu'un admin lui crée une clé à la main. Sur
+`/account/keys`, un compte connecté délivre une clé restreinte à exactement un feed, choisi parmi
+ceux qui sont à la fois **publics** et acceptent de nouveaux packages (`allow_new_packages`). Un
+feed qui n'accepte pas de nouveaux packages n'offre aucun chemin vers la propriété en
+libre-service — ni par ce formulaire, ni autrement — donc il n'apparaît jamais dans la liste.
+`/account` liste tous les packages possédés par le compte courant, tous feeds confondus.
+
+Une clé en libre-service ne porte jamais le scope `packages.read`, volontairement : elle peut
+pousser et délister, rien de plus. Voir la section Sécurité ci-dessous pour la raison.
+
+**La vérification par email est désactivée par défaut**
+(`Config\Auth::$actions['register']` vaut `null`) — Pépite ne configure aucun transport mail par
+défaut (`Config\Email`), et forcer la vérification bloquerait silencieusement toute inscription
+sur un déploiement sans transport fonctionnel (Docker, la plupart des installations locales,
+certains hébergeurs mutualisés) — le compte reste en attente d'activation, l'email de
+confirmation n'arrive jamais. Une fois `Config\Email` pointé vers un transport dont vous avez
+vérifié qu'il délivre réellement, l'activer :
+
+```php
+public array $actions = [
+    'register' => \CodeIgniter\Shield\Authentication\Actions\EmailActivator::class,
+];
+```
+
+L'inscription et la connexion sont déjà limitées en fréquence quoi qu'il arrive (filtre
+`AuthRates` de Shield, 10 requêtes/minute/IP) — rien à configurer en plus pour ça.
+
 ## Sécurité
 
 - La console d'admin (`/admin/*`) est authentifiée via
@@ -166,7 +197,14 @@ push et une publication : **[docs/trusted-publishing.md](docs/trusted-publishing
   publication.
 - Une clé API sans restriction (`feed_api_key_rules`) peut publier sur n'importe quel feed
   autorisant les nouveaux identifiants. Restreindre une clé à un feed et à un motif
-  d'identifiant (`Contoso.*`) dès qu'elle sort d'un usage strictement personnel.
+  d'identifiant (`Contoso.*`) dès qu'elle sort d'un usage strictement personnel. Une clé *avec*
+  une restriction est aussi confinée à ne lire que le(s) feed(s) qu'elle nomme —
+  `App\Filters\FeedRead` consulte les mêmes règles pour la lecture d'un feed privé, pas
+  seulement `PublishAuthorizer` pour la publication.
+- Les clés en libre-service (`/account/keys`) sont volontairement restreintes par construction
+  — `packages.push` et `packages.unlist` seulement, un seul feed, jamais `packages.read` —
+  puisque le libre-service ne porte aucune des vérifications implicites qu'un admin fait déjà en
+  créant une clé à la main.
 - `.env` est exclu du dépôt — n'y committez jamais de secrets réels. Seul `env` (le gabarit
   CI4) est suivi.
 - La clé privée de signature des releases (`php spark updater:keygen`) ne doit **jamais**
