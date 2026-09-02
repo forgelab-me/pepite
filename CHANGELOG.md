@@ -9,6 +9,46 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.11.0] - 2026-09-01
+
+### Added
+
+- **Self-service API keys**, at `/account/keys` — any logged-in user can now
+  issue their own key to push packages, instead of an admin creating one for
+  them by e-mail. This is what makes registration (already open —
+  `Config\Auth::$allowRegistration`) actually usable for third parties: until
+  now a self-registered account could log in and do nothing package-related.
+  A key is scoped to exactly one feed, chosen from those that are both
+  public and accept new packages — a feed that doesn't already has no way
+  for anyone to become an owner on it, self-service or otherwise, so it
+  isn't offered.
+- **"My packages"**, at `/account` — every package the current user owns,
+  across every feed, reusing the existing first-push-claims-the-identifier
+  rule and ownership checks (`PackageOwnerModel`, `PublishAuthorizer`) —
+  neither changed. A package owned in a private feed shows without a link:
+  the public package page 404s a private feed regardless of ownership, and
+  a dead link is worse than none.
+- The nav's "My account" link is now visible to any logged-in user; the
+  admin-only links (feeds, keys, admins, updates) are now actually gated on
+  the admin group rather than just "logged in", which stopped being the same
+  thing the moment a self-registered account could exist.
+
+### Upgrading
+
+Nothing to migrate.
+
+A deliberate scope decision worth knowing about: a self-service key never
+carries the `packages.read` scope, only `packages.push` and
+`packages.unlist`. `App\Filters\FeedRead` (which gates a *private* feed)
+authorizes purely on that scope string, with no awareness of which feed a
+key is meant to be restricted to — so a key that had it could read every
+private feed on the instance, not just the one it was issued for. An
+admin-issued key already carries an implicit vetting of the recipient that
+self-service cannot offer, so the scope that would matter here is simply
+never issued. Nothing needs it: pushing never sends it, and a public feed
+needs no authentication to read at all. If `FeedRead` is ever changed to
+consult `feed_api_key_rules` per feed, this restriction can be revisited.
+
 ## [1.10.0] - 2026-09-01
 
 ### Added

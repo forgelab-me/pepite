@@ -55,6 +55,16 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
     $routes->post('keys/(:num)/revoke', 'ApiKeys::revoke/$1');
 });
 
+// Self-service: any logged-in user manages their own packages and keys, no
+// group required — unlike admin/, which is admins only.
+$routes->group('account', ['namespace' => 'App\Controllers\Account', 'filter' => ['session', 'csrf']], static function ($routes): void {
+    $routes->get('/', 'Packages::index');
+    $routes->get('keys', 'ApiKeys::index');
+    $routes->get('keys/create', 'ApiKeys::create');
+    $routes->post('keys', 'ApiKeys::store');
+    $routes->post('keys/(:num)/revoke', 'ApiKeys::revoke/$1');
+});
+
 /*
  * The NuGet protocol. These routes must never inherit the session or CSRF
  * filters: the caller is a command line tool with neither cookies nor tokens.

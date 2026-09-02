@@ -12,8 +12,8 @@ use Forgelabme\Ci4Updater\Config\Updater as BaseUpdater;
  */
 class Updater extends BaseUpdater
 {
-    public const VERSION    = '1.10.0';
-    public const DATE       = '2026-09-01';
+    public const VERSION    = '1.11.0';
+    public const DATE       = '2026-09-02';
     public const USER_AGENT = 'UpdateServerAdmin/1.0';
 
     // The layout the update panel extends, and the name shown beside the

@@ -180,10 +180,13 @@
                 <li class="nav-item"><a class="nav-link" href="<?= site_url('/') ?>">Feeds</a></li>
                 <li class="nav-item"><a class="nav-link" href="<?= site_url('search') ?>">Search</a></li>
                 <?php if (function_exists('auth') && auth()->loggedIn()): ?>
-                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/feeds') ?>">Admin feeds</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/keys') ?>">API keys</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/users') ?>">Admins</a></li>
-                    <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/updates') ?>">Updates</a></li>
+                    <li class="nav-item"><a class="nav-link" href="<?= site_url('account') ?>">My account</a></li>
+                    <?php if (auth()->user()->inGroup('admin')): ?>
+                        <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/feeds') ?>">Admin feeds</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/keys') ?>">API keys</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/users') ?>">Admins</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/updates') ?>">Updates</a></li>
+                    <?php endif ?>
                     <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Log out</a></li>
                 <?php else: ?>
                     <li class="nav-item"><a class="nav-link" href="<?= site_url('login') ?>">Log in</a></li>

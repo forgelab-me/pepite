@@ -44,6 +44,32 @@ final class PackageModel extends Model
     }
 
     /**
+     * Every package a user owns, across every feed — the account area's
+     * landing page. Joined the same way search()'s cross-feed branch is,
+     * since both need a feed name/slug alongside each row; feed_visibility
+     * rides along too, so the view can tell a private-feed row apart (its
+     * public page 404s regardless of ownership) without a second query.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function ownedBy(int $userId): array
+    {
+        $packages = $this->db->prefixTable('packages');
+        $owners   = $this->db->prefixTable('package_owners');
+        $feeds    = $this->db->prefixTable('feeds');
+
+        return $this->builder()
+            ->select($packages . '.*, f.slug AS feed_slug, f.name AS feed_name, f.visibility AS feed_visibility')
+            ->join($owners . ' o', 'o.package_id = ' . $packages . '.id')
+            ->join($feeds . ' f', 'f.id = ' . $packages . '.feed_id')
+            ->where('o.user_id', $userId)
+            ->orderBy('f.slug', 'ASC')
+            ->orderBy($packages . '.package_id_lower', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
      * Search, as the SearchQueryService exposes it — and also what the web
      * search box runs, per feed or, with $feedId null, across every public
      * one at once (a private feed is reachable only from its own page with
