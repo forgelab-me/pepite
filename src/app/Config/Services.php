@@ -5,6 +5,7 @@ namespace Config;
 use App\Libraries\FeedResolver;
 use App\Libraries\Http\MultipartPutParser;
 use App\Libraries\PackagePublisher;
+use App\Libraries\PackagePurger;
 use App\Libraries\PackageStorage;
 use App\Libraries\PublishAuthorizer;
 use App\Models\FeedApiKeyRuleModel;
@@ -75,6 +76,15 @@ class Services extends BaseService
             db_connect(),
             static::publishAuthorizer(),
         );
+    }
+
+    public static function packagePurger(bool $getShared = true): PackagePurger
+    {
+        if ($getShared) {
+            return static::getSharedInstance('packagePurger');
+        }
+
+        return new PackagePurger(static::packageStorage(), db_connect());
     }
 
     public static function multipartPutParser(bool $getShared = true): MultipartPutParser

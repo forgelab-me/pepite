@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace App\Commands;
 
 use App\Models\FeedModel;
-use App\Models\PackageDependencyModel;
 use App\Models\PackageModel;
-use App\Models\PackageOwnerModel;
 use App\Models\PackageVersionModel;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use Config\Database;
 
 /**
  * Irreversibly removes a package, or one version of it — database rows and
@@ -25,8 +22,11 @@ use Config\Database;
  * published file itself has to stop existing, e.g. because it contains
  * something that should never have been public in the first place. That
  * case bypasses every one of those guarantees on purpose, which is why
- * it is a CLI command an operator runs deliberately rather than a button
- * in the console.
+ * both this command and its console equivalent
+ * (App\Controllers\Admin\Packages::purge()/purgeVersion(), superadmin
+ * only) require the exact package id typed back before doing anything.
+ * The actual mutation lives in App\Libraries\PackagePurger, shared by
+ * both.
  */
 final class PurgePackage extends BaseCommand
 {
@@ -104,7 +104,7 @@ final class PurgePackage extends BaseCommand
             return EXIT_USER_INPUT;
         }
 
-        $this->purge($package, $toDelete, $deletePackageToo);
+        service('packagePurger')->purge($package, $toDelete, $deletePackageToo);
 
         CLI::write(sprintf(
             '  %s %d version(s) of "%s" removed%s.',
@@ -146,44 +146,6 @@ final class PurgePackage extends BaseCommand
         $typed = CLI::prompt(sprintf('  Type "%s" to confirm', $package['package_id']));
 
         return $typed === $package['package_id'];
-    }
-
-    /**
-     * @param array<string, mixed>       $package
-     * @param list<array<string, mixed>> $toDelete
-     */
-    private function purge(array $package, array $toDelete, bool $deletePackageToo): void
-    {
-        $storage = service('packageStorage');
-        $db      = Database::connect();
-
-        $db->transStart();
-
-        $versions = model(PackageVersionModel::class);
-
-        foreach ($toDelete as $row) {
-            model(PackageDependencyModel::class)->where('package_version_id', $row['id'])->delete();
-            $versions->delete((int) $row['id']);
-        }
-
-        if ($deletePackageToo) {
-            model(PackageOwnerModel::class)->where('package_id', $package['id'])->delete();
-            model(PackageModel::class)->delete((int) $package['id']);
-        }
-
-        $db->transComplete();
-
-        // Files are removed only once the rows they were keyed off are
-        // safely gone — a route that resolves through the database can no
-        // longer reach them at this point regardless, but leaving them on
-        // disk defeats the one thing this command exists to guarantee.
-        foreach ($toDelete as $row) {
-            $storage->discard(dirname((string) $row['nupkg_path']));
-        }
-
-        if ($deletePackageToo) {
-            @rmdir($storage->absolute(sprintf('packages/%d/%s', $package['feed_id'], $package['package_id_lower'])));
-        }
     }
 
     /**

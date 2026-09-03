@@ -9,6 +9,49 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.0] - 2026-09-03
+
+### Added
+
+- **Permanently deleting a package or version from the admin console**, at
+  a package's own page — the UI counterpart to `php spark pepite:purge`.
+  Requires typing the package identifier back to confirm, same rigor as
+  the CLI's own prompt (checked server-side, not just a disabled button).
+  The actual mutation moved into a new, shared `App\Libraries\PackagePurger`
+  (registered as `service('packagePurger')`) so the CLI and the console
+  action can't drift apart.
+- **A real `superadmin` tier**, for the first time. Every other admin
+  action still only needs `admin`; the two new delete actions need
+  `superadmin` too, checked in the controller rather than as a second
+  route filter — see the code comment on
+  `Admin\Packages::requireSuperadmin()` for why stacking
+  `group:admin`/`group:superadmin` as separate route filters would
+  silently require *both* memberships rather than expressing "admin, and
+  superadmin for this one." No console UI to promote someone — bootstrap
+  from the shell (`php spark shield:user addgroup <email> admin` then
+  `... addgroup <email> superadmin`, both required); see the README's new
+  "Permanently deleting a package" section.
+- **Self-service delist/relist**, at `/account/packages/{id}` — an owner
+  can now hide or restore one of their own versions from the console, not
+  just via `dotnet nuget delete` with a self-service API key (which
+  already worked — `PackagePublish::unlist()`/`relist()` already checked
+  ownership — there was simply no web UI for it). Mirrors
+  `Admin\Packages`' own delist/relist almost exactly, scoped by ownership
+  (`PackageOwnerModel::owns()`) instead of the admin group; a non-owner
+  gets a 404, same as an unknown package. Deleting stays out of scope here
+  — that's the superadmin-only console action above, not extended to
+  self-service.
+- "My packages" (`/account`) now links each row to this new management
+  page, plus a small external-link icon to the public page when the feed
+  is public.
+
+### Upgrading
+
+Nothing to migrate. No account is a superadmin by default — the delete UI
+stays invisible and its routes refuse everyone, including existing admins,
+until someone is deliberately promoted via the two-step CLI bootstrap
+above.
+
 ## [1.11.1] - 2026-09-02
 
 ### Fixed

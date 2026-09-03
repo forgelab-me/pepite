@@ -16,6 +16,10 @@ use CodeIgniter\HTTP\ResponseInterface;
  * Browsing and moderating packages from the admin console: unlike the public
  * pages (Web\Feeds, Web\Packages), this sees private feeds and unlisted
  * versions, and can act on them.
+ *
+ * unlist()/relist() need only 'admin', same as everything else here.
+ * purge()/purgeVersion() need 'superadmin' too — see requireSuperadmin()
+ * for why that's checked here rather than as a second route filter.
  */
 final class Packages extends Controller
 {
@@ -56,6 +60,84 @@ final class Packages extends Controller
         return $this->setListed($feedId, $packageId, $versionId, true);
     }
 
+    /**
+     * Permanently deletes an entire package — every version, its files, its
+     * ownership records. The console equivalent of `pepite:purge`, gated
+     * one level narrower than the rest of this controller: every action
+     * above only needs 'admin', this needs 'superadmin' too, since unlike
+     * delisting there is no way back from this one.
+     */
+    public function purge(int $feedId, int $packageId): ResponseInterface
+    {
+        if (($denied = $this->requireSuperadmin($feedId, $packageId)) !== null) {
+            return $denied;
+        }
+
+        $package = $this->requirePackage($feedId, $packageId);
+
+        if (! $this->confirmed($package)) {
+            return redirect()
+                ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
+                ->with('error', 'Type the package identifier exactly to confirm.');
+        }
+
+        $versions = model(PackageVersionModel::class)->forPackage($packageId);
+
+        service('packagePurger')->purge($package, $versions, deletePackageToo: true);
+
+        return redirect()
+            ->to(site_url('admin/feeds/' . $feedId . '/packages'))
+            ->with('message', sprintf('"%s" permanently deleted.', $package['package_id']));
+    }
+
+    /**
+     * Permanently deletes one version. If it is the package's last one, the
+     * package identifier goes with it — same rule `pepite:purge` applies.
+     */
+    public function purgeVersion(int $feedId, int $packageId, int $versionId): ResponseInterface
+    {
+        if (($denied = $this->requireSuperadmin($feedId, $packageId)) !== null) {
+            return $denied;
+        }
+
+        $package = $this->requirePackage($feedId, $packageId);
+
+        if (! $this->confirmed($package)) {
+            return redirect()
+                ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
+                ->with('error', 'Type the package identifier exactly to confirm.');
+        }
+
+        $allVersions = model(PackageVersionModel::class)->forPackage($packageId);
+        $target      = null;
+
+        foreach ($allVersions as $row) {
+            if ((int) $row['id'] === $versionId) {
+                $target = $row;
+
+                break;
+            }
+        }
+
+        if ($target === null) {
+            throw PageNotFoundException::forPageNotFound();
+        }
+
+        $deletePackageToo = count($allVersions) === 1;
+
+        service('packagePurger')->purge($package, [$target], $deletePackageToo);
+
+        if ($deletePackageToo) {
+            return redirect()
+                ->to(site_url('admin/feeds/' . $feedId . '/packages'))
+                ->with('message', sprintf('"%s" permanently deleted.', $package['package_id']));
+        }
+
+        return redirect()
+            ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
+            ->with('message', sprintf('Version %s permanently deleted.', $target['version_normalized']));
+    }
+
     private function setListed(int $feedId, int $packageId, int $versionId, bool $listed): ResponseInterface
     {
         $this->requireFeed($feedId);
@@ -76,6 +158,36 @@ final class Packages extends Controller
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
             ->with('message', $listed ? 'Version relisted.' : 'Version delisted.');
+    }
+
+    /**
+     * The `admin/*` route group already requires 'admin'. Stacking a
+     * second `group:superadmin` route filter would not express "admin OR
+     * superadmin" — CI4 merges group and route filters rather than
+     * replacing them, so both `group:admin` and `group:superadmin` would
+     * run as independent checks, each demanding its own membership: a
+     * superadmin who isn't also in 'admin' would be refused by the first
+     * filter before ever reaching this check. Checking here instead keeps
+     * the requirement to exactly "superadmin", on top of whatever already
+     * got the request this far.
+     */
+    private function requireSuperadmin(int $feedId, int $packageId): ?ResponseInterface
+    {
+        if (auth()->user()->inGroup('superadmin')) {
+            return null;
+        }
+
+        return redirect()
+            ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
+            ->with('error', 'Superadmin required to delete a package or version.');
+    }
+
+    /**
+     * @param array<string, mixed> $package
+     */
+    private function confirmed(array $package): bool
+    {
+        return $this->request->getPost('confirm') === $package['package_id'];
     }
 
     /**

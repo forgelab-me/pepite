@@ -8,6 +8,8 @@ use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use App\Models\PackageModel;
 use App\Models\PackageOwnerModel;
+use App\Models\PackageVersionModel;
+use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\Shield\Entities\User;
 use CodeIgniter\Shield\Models\UserIdentityModel;
 use CodeIgniter\Shield\Models\UserModel;
@@ -166,6 +168,100 @@ final class AccountConsoleTest extends CIUnitTestCase
 
         $result->assertSee('Contoso.Widgets');
         $result->assertSee('Default feed');
+    }
+
+    public function testAnOwnerCanDelistAndRelistTheirOwnVersion(): void
+    {
+        $user      = $this->user('dev@pepite.test');
+        $packageId = $this->ownedPackage($user, 'Contoso.Widgets');
+        $versionId = $this->addVersion($packageId, '1.0.0');
+
+        $this->postWithCsrf($user, 'account/packages/' . $packageId, 'account/packages/' . $packageId . '/versions/' . $versionId . '/unlist', [])
+            ->assertRedirectTo(site_url('account/packages/' . $packageId));
+
+        $this->assertSame(0, (int) model(PackageVersionModel::class)->find($versionId)['is_listed']);
+
+        $this->postWithCsrf($user, 'account/packages/' . $packageId, 'account/packages/' . $packageId . '/versions/' . $versionId . '/relist', []);
+
+        $this->assertSame(1, (int) model(PackageVersionModel::class)->find($versionId)['is_listed']);
+    }
+
+    public function testDelistingNeverDeletesTheVersion(): void
+    {
+        $user      = $this->user('dev@pepite.test');
+        $packageId = $this->ownedPackage($user, 'Contoso.Widgets');
+        $versionId = $this->addVersion($packageId, '1.0.0');
+
+        $this->postWithCsrf($user, 'account/packages/' . $packageId, 'account/packages/' . $packageId . '/versions/' . $versionId . '/unlist', []);
+
+        $this->assertNotNull(model(PackageVersionModel::class)->find($versionId));
+        $this->assertNotNull(model(PackageModel::class)->find($packageId));
+    }
+
+    public function testAStrangerCannotViewAPackageTheyDoNotOwn(): void
+    {
+        $owner     = $this->user('owner@pepite.test');
+        $stranger  = $this->user('stranger@pepite.test');
+        $packageId = $this->ownedPackage($owner, 'Contoso.Widgets');
+
+        $this->expectException(PageNotFoundException::class);
+
+        $this->actingAs($stranger)->call('get', 'account/packages/' . $packageId);
+    }
+
+    public function testAStrangerCannotDelistAVersionTheyDoNotOwn(): void
+    {
+        $owner     = $this->user('owner@pepite.test');
+        $stranger  = $this->user('stranger@pepite.test');
+        $packageId = $this->ownedPackage($owner, 'Contoso.Widgets');
+        $versionId = $this->addVersion($packageId, '1.0.0');
+
+        try {
+            // 'account' itself never renders a csrf_field() (no form on that
+            // page) — 'account/keys/create' always does; the token is
+            // session-wide, not tied to a specific action.
+            $this->postWithCsrf($stranger, 'account/keys/create', 'account/packages/' . $packageId . '/versions/' . $versionId . '/unlist', []);
+            $this->fail('Expected a PageNotFoundException.');
+        } catch (PageNotFoundException) {
+            // Expected — postWithCsrf() already issued the request by the
+            // time the exception surfaces, so the assertion below still
+            // runs against real post-request state.
+        }
+
+        $this->assertSame(1, (int) model(PackageVersionModel::class)->find($versionId)['is_listed'], 'A non-owner must not be able to delist someone else\'s version.');
+    }
+
+    private function ownedPackage(User $user, string $packageId): int
+    {
+        $feedId = (int) model(FeedModel::class)->findBySlug('default')['id'];
+
+        model(PackageModel::class)->insert([
+            'feed_id'          => $feedId,
+            'package_id'       => $packageId,
+            'package_id_lower' => strtolower($packageId),
+        ]);
+        $id = (int) model(PackageModel::class)->getInsertID();
+
+        model(PackageOwnerModel::class)->claim($id, (int) $user->id);
+
+        return $id;
+    }
+
+    private function addVersion(int $packageId, string $version): int
+    {
+        model(PackageVersionModel::class)->insert([
+            'package_id'               => $packageId,
+            'version_original'         => $version,
+            'version_normalized'       => $version,
+            'version_normalized_lower' => $version,
+            'version_sort_key'         => $version,
+            'is_listed'                => true,
+            'nupkg_path'               => 'packages/x/x/x.nupkg',
+            'nuspec_path'              => 'packages/x/x/x.nuspec',
+            'sha512_base64'            => base64_encode(hash('sha512', 'fixture', true)),
+        ]);
+
+        return (int) model(PackageVersionModel::class)->getInsertID();
     }
 
     private function user(string $email): User

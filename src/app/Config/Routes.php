@@ -37,6 +37,11 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
     $routes->get('feeds/(:num)/packages/(:num)', 'Packages::show/$1/$2');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/unlist', 'Packages::unlist/$1/$2/$3');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/relist', 'Packages::relist/$1/$2/$3');
+    // Superadmin only — Packages::requireSuperadmin() checks it in the
+    // controller, not here (stacking a second group:superadmin filter would
+    // wrongly require BOTH admin and superadmin, not either).
+    $routes->post('feeds/(:num)/packages/(:num)/purge', 'Packages::purge/$1/$2');
+    $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/purge', 'Packages::purgeVersion/$1/$2/$3');
 
     $routes->get('feeds/(:num)/publishers', 'Publishers::index/$1');
     $routes->post('feeds/(:num)/publishers', 'Publishers::store/$1');
@@ -59,6 +64,9 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
 // group required — unlike admin/, which is admins only.
 $routes->group('account', ['namespace' => 'App\Controllers\Account', 'filter' => ['session', 'csrf']], static function ($routes): void {
     $routes->get('/', 'Packages::index');
+    $routes->get('packages/(:num)', 'Packages::show/$1');
+    $routes->post('packages/(:num)/versions/(:num)/unlist', 'Packages::unlist/$1/$2');
+    $routes->post('packages/(:num)/versions/(:num)/relist', 'Packages::relist/$1/$2');
     $routes->get('keys', 'ApiKeys::index');
     $routes->get('keys/create', 'ApiKeys::create');
     $routes->post('keys', 'ApiKeys::store');

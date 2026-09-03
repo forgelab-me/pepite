@@ -189,6 +189,33 @@ public array $actions = [
 L'inscription et la connexion sont déjà limitées en fréquence quoi qu'il arrive (filtre
 `AuthRates` de Shield, 10 requêtes/minute/IP) — rien à configurer en plus pour ça.
 
+## Supprimer un package définitivement
+
+Délister masque une version de la recherche et de la restauration, mais ne la supprime jamais —
+tout ce qui en dépend déjà continue de fonctionner, volontairement. Cette garantie est
+délibérément contournable pour le seul cas où elle ne peut pas tenir : un fichier publié qui
+n'aurait jamais dû être public (un secret qui fuite, des données personnelles, un malware). Deux
+façons équivalentes de supprimer un package ou une de ses versions — lignes en base et fichier
+stocké, de façon irréversible :
+
+- `php spark pepite:purge <feed-slug> <package-id> [version] [--yes]` — affiche d'abord
+  précisément ce qui va être supprimé, puis demande de retaper l'identifiant du package pour
+  confirmer.
+- Depuis la page d'un package dans la console d'admin, réservé à un **superadmin** (voir
+  ci-dessous) — la même exigence de confirmation tapée, dans le navigateur.
+
+Aucun des deux n'est accessible à un compte `admin` simple. Créer un superadmin se fait en ligne
+de commande (il n'y a pas d'interface pour ça — elle devrait elle-même être réservée aux
+superadmins, ce qui ne résout rien pour le tout premier) :
+
+```bash
+php spark shield:user addgroup <email> admin
+php spark shield:user addgroup <email> superadmin
+```
+
+Les deux appartenances de groupe sont nécessaires — le filtre de route de la console d'admin
+exige déjà `admin` seul, et les actions de suppression vérifient en plus `superadmin` par-dessus.
+
 ## Sécurité
 
 - La console d'admin (`/admin/*`) est authentifiée via

@@ -184,6 +184,31 @@ public array $actions = [
 Registration and login are already rate-limited regardless (Shield's `AuthRates` filter, 10
 requests/minute/IP) — nothing extra to configure for that.
 
+## Permanently deleting a package
+
+Unlisting hides a version from search and restore, but never deletes it — anything already
+depending on it keeps working, by design. That guarantee is deliberately breakable for the one
+case it can't hold: a published file that should never have been public at all (a leaked secret,
+personal data, malware). Two equivalent ways to remove a package or one of its versions —
+database rows and the stored file alike, irreversibly:
+
+- `php spark pepite:purge <feed-slug> <package-id> [version] [--yes]` — prints exactly what will
+  be deleted first, then requires typing the package id back to confirm.
+- From a package's page in the admin console, for a **superadmin** only (see below) — the same
+  typed-confirmation requirement, in the browser.
+
+Neither is reachable by a plain `admin` account. Bootstrap a superadmin from the shell (there is
+no console UI for this — it would itself need to be superadmin-gated, which doesn't help for the
+very first one):
+
+```bash
+php spark shield:user addgroup <email> admin
+php spark shield:user addgroup <email> superadmin
+```
+
+Both group memberships are required — the admin console's own route filter already demands plain
+`admin`, and the delete actions additionally check `superadmin` on top of that.
+
 ## Security
 
 - The admin console (`/admin/*`) is authenticated via

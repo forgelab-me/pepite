@@ -13,19 +13,23 @@
     <div class="card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>Package</th><th>Feed</th><th>Downloads</th></tr></thead>
+                <thead><tr><th>Package</th><th>Feed</th><th>Downloads</th><th></th></tr></thead>
                 <tbody>
                 <?php foreach ($packages as $package): ?>
                     <tr>
                         <td>
+                            <a href="<?= site_url('account/packages/' . $package['id']) ?>"><?= esc($package['package_id']) ?></a>
                             <?php if ($package['feed_visibility'] === 'public'): ?>
-                                <a href="<?= site_url('browse/' . $package['feed_slug'] . '/' . $package['package_id_lower']) ?>"><?= esc($package['package_id']) ?></a>
-                            <?php else: ?>
-                                <?= esc($package['package_id']) ?>
+                                <a class="ms-1 text-body-secondary" href="<?= site_url('browse/' . $package['feed_slug'] . '/' . $package['package_id_lower']) ?>" title="Public page">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
                             <?php endif ?>
                         </td>
                         <td><?= esc($package['feed_name']) ?></td>
                         <td><?= (int) $package['total_downloads'] ?></td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary" href="<?= site_url('account/packages/' . $package['id']) ?>">Manage</a>
+                        </td>
                     </tr>
                 <?php endforeach ?>
                 </tbody>
