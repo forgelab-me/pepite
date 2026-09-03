@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Neither job below writes anything — checkout and test runs only. Without
+# this, both fall back to whatever the repo/org's default GITHUB_TOKEN
+# permissions are, which can be broader than either job actually needs.
+permissions:
+  contents: read
+
 jobs:
   sqlite:
     runs-on: ubuntu-latest

@@ -9,6 +9,21 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.2] - 2026-09-03
+
+### Changed
+
+- **A real favicon**, replacing CodeIgniter's stock default — a bold "P"
+  monogram, white on the site's own amber accent, built as a genuine
+  multi-resolution `.ico` (16×16 + 32×32) with no image library involved
+  (none is available in this environment). Also given an explicit
+  `<link rel="icon">` in the layout rather than relying solely on the
+  `/favicon.ico` browser convention.
+
+### Upgrading
+
+Nothing to migrate.
+
 ## [1.12.1] - 2026-09-03
 
 ### Fixed
