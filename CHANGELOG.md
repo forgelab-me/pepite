@@ -9,6 +9,21 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.1] - 2026-09-03
+
+### Fixed
+
+- The per-version Delist/Delete controls on a package's admin page stacked
+  on top of each other — the Delist/Relist `<form>` had no display class,
+  so it fell back to block-level and pushed the delete form onto its own
+  line. The confirm field's placeholder also gave no hint what to type;
+  it now shows the package identifier itself, same as the danger zone's
+  own confirm field already did.
+
+### Upgrading
+
+Nothing to migrate.
+
 ## [1.12.0] - 2026-09-03
 
 ### Added

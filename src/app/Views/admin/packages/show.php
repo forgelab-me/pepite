@@ -26,28 +26,31 @@
                     </td>
                     <td><?= (int) $version['downloads'] ?></td>
                     <td class="text-end">
-                        <?php $base = 'admin/feeds/' . $feed['id'] . '/packages/' . $package['id'] . '/versions/' . $version['id']; ?>
-                        <?php if ($version['is_listed']): ?>
-                            <form method="post" action="<?= site_url($base . '/unlist') ?>">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">Delist</button>
-                            </form>
-                        <?php else: ?>
-                            <form method="post" action="<?= site_url($base . '/relist') ?>">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">Relist</button>
-                            </form>
-                        <?php endif ?>
-                        <?php if ($superadmin): ?>
-                            <form method="post" action="<?= site_url($base . '/purge') ?>"
-                                  class="d-inline-flex gap-1 align-items-center ms-1"
-                                  data-purge-form data-expect="<?= esc($package['package_id'], 'attr') ?>">
-                                <?= csrf_field() ?>
-                                <input type="text" name="confirm" class="form-control form-control-sm" style="width: 9rem;"
-                                       placeholder="package id" autocomplete="off" data-purge-input required>
-                                <button type="submit" class="btn btn-sm btn-outline-danger" data-purge-submit disabled>Delete</button>
-                            </form>
-                        <?php endif ?>
+                        <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
+                            <?php $base = 'admin/feeds/' . $feed['id'] . '/packages/' . $package['id'] . '/versions/' . $version['id']; ?>
+                            <?php if ($version['is_listed']): ?>
+                                <form method="post" action="<?= site_url($base . '/unlist') ?>" class="d-inline-block">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Delist</button>
+                                </form>
+                            <?php else: ?>
+                                <form method="post" action="<?= site_url($base . '/relist') ?>" class="d-inline-block">
+                                    <?= csrf_field() ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Relist</button>
+                                </form>
+                            <?php endif ?>
+                            <?php if ($superadmin): ?>
+                                <form method="post" action="<?= site_url($base . '/purge') ?>"
+                                      class="d-inline-flex gap-1 align-items-center"
+                                      data-purge-form data-expect="<?= esc($package['package_id'], 'attr') ?>">
+                                    <?= csrf_field() ?>
+                                    <input type="text" name="confirm" class="form-control form-control-sm" style="width: 11rem;"
+                                           placeholder="<?= esc($package['package_id']) ?>" title="Type &quot;<?= esc($package['package_id']) ?>&quot; to confirm"
+                                           autocomplete="off" data-purge-input required>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" data-purge-submit disabled>Delete</button>
+                                </form>
+                            <?php endif ?>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach ?>
