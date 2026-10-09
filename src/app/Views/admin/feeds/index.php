@@ -37,8 +37,9 @@
                         <a class="btn btn-sm btn-outline-secondary" href="<?= site_url('admin/feeds/' . $feed['id'] . '/publishers') ?>">Publishers</a>
                         <a class="btn btn-sm btn-outline-secondary" href="<?= site_url('admin/feeds/' . $feed['id'] . '/edit') ?>">Edit</a>
                         <form method="post" action="<?= site_url('admin/feeds/' . $feed['id'] . '/delete') ?>" class="d-inline"
-                              onsubmit="return confirm('Delete feed &quot;<?= esc($feed['name'], 'js') ?>&quot; and all its packages?');">
+                              onsubmit="var t = prompt('This deletes the feed and ALL its packages, permanently.\n\nType &quot;<?= esc($feed['slug'], 'js') ?>&quot; to confirm:'); if (t === null) { return false; } this.confirm.value = t; return true;">
                             <?= csrf_field() ?>
+                            <input type="hidden" name="confirm" value="">
                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                         </form>
                     </td>

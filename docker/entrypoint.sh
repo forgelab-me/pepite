@@ -6,6 +6,16 @@ set -e
 
 log() { echo "[entrypoint] $*"; }
 
+# The web installer (/install) is for a bare host with no shell. Here the
+# database comes from the environment and this script seeds the admin, so
+# nothing legitimate ever needs it — and left open it is a takeover: the
+# image ships no .env, so the installer's "is .env writable" check reduces to
+# "is the app directory writable", which the base image can satisfy. The
+# lock file is exactly what the installer itself writes when it finishes.
+if [ -d writable ]; then
+    [ -f writable/install.lock ] || date -u +%Y-%m-%dT%H:%M:%S+00:00 > writable/install.lock
+fi
+
 # writable/ is usually a volume, which starts out owned by root.
 if [ -d writable ]; then
     chown -R www-data:www-data writable 2>/dev/null || true

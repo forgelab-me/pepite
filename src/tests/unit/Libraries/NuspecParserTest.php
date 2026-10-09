@@ -24,6 +24,31 @@ final class NuspecParserTest extends CIUnitTestCase
         $this->parser = new NuspecParser();
     }
 
+    public function testOnlyHttpUrlsSurviveInTheLinkFields(): void
+    {
+        $metadata = $this->parser->parse($this->nuspec(
+            '<projectUrl>javascript:alert(1)</projectUrl>'
+            . '<licenseUrl>data:text/html,x</licenseUrl>'
+            . '<iconUrl>https://example.test/icon.png</iconUrl>'
+            . '<repository type="git" url="vbscript:x"/>',
+        ));
+
+        $this->assertNull($metadata->projectUrl);
+        $this->assertNull($metadata->licenseUrl);
+        $this->assertNull($metadata->repositoryUrl);
+        $this->assertSame('https://example.test/icon.png', $metadata->iconUrl);
+    }
+
+    public function testADoctypeIsRefused(): void
+    {
+        $this->expectException(InvalidPackageException::class);
+
+        $this->parser->parse(
+            '<?xml version="1.0"?><!DOCTYPE package [<!ENTITY a "aaaa">]>'
+            . '<package><metadata><id>Foo</id><version>1.0.0</version><description>&a;</description></metadata></package>',
+        );
+    }
+
     /**
      * The reason this parser ignores namespaces: these two fixtures were packed
      * by the same SDK on the same machine within the same minute, and came out

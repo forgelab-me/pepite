@@ -55,6 +55,14 @@ final class NuGetApiKey implements FilterInterface
         }
 
         $user = $result->extraInfo();
+
+        // Shield only enforces a ban in attempt(); check() — which this uses,
+        // for the reason above — validates the token and nothing about its
+        // owner, so without this a banned account's keys keep working.
+        if ($user->isBanned()) {
+            return $this->refuse(403, 'This account is suspended.');
+        }
+
         $authenticator->login($user);
 
         $required = $arguments[0] ?? null;

@@ -109,6 +109,9 @@ jobs:
           docker compose exec -T app php -r \
             'exit(password_verify("smoke-test-password", trim(file_get_contents("php://stdin"))) ? 0 : 1);' < /tmp/hash.txt
 
+          echo "--- the web installer is locked (open, it is an instance takeover) ---"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/install)" = "403"
+
           echo "--- writable/ is not reachable over HTTP ---"
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/writable/logs/log.log)" = "404"
 

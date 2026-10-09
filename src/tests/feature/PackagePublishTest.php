@@ -244,6 +244,23 @@ final class PackagePublishTest extends CIUnitTestCase
         $this->assertSame(0, model(PackageVersionModel::class)->countAllResults());
     }
 
+    /**
+     * Shield enforces a ban only when logging in with credentials; the filter
+     * validates the key with check(), which never looks at its owner — so the
+     * filter has to ask itself.
+     */
+    public function testABannedAccountsKeyCannotPushAnswers403(): void
+    {
+        $banned = $this->createUser('banned@pepite.test');
+        $key    = $banned->generateAccessToken('test', [NuGetApiKey::SCOPE_PUSH])->raw_token;
+        $banned->ban('abuse');
+
+        $result = $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg', key: $key);
+
+        $result->assertStatus(403);
+        $this->assertSame(0, model(PackageVersionModel::class)->countAllResults());
+    }
+
     // -------------------------------------------------- unlist and relist
 
     public function testUnlistHidesFromSearchButKeepsTheBlobDownloadable(): void

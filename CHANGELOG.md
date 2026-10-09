@@ -9,6 +9,69 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.3] - 2026-10-09
+
+First batch from a security and architecture review of the whole app, now
+that registration is open to third parties.
+
+### Security
+
+- **Docker: the web installer is now locked from the first start.** The
+  image ships no `.env`, so the installer's "can I write `.env`" check
+  reduced to "is the app directory writable" — which the base image can
+  satisfy — and nothing in the Docker path ever wrote
+  `writable/install.lock`. An open `/install` lets a stranger run the
+  installer against their own database and admin account and take the
+  instance over. The entrypoint now writes the lock (the installer is for
+  hosts with no shell; here the environment and the entrypoint do its
+  job), and the Docker smoke test asserts `/install` answers 403.
+- **Package files are now served as untrusted content.** Icons, nuspecs and
+  readmes come out of `/feeds/*/v3/flatcontainer/…` on the same origin as
+  the admin console, and a package's author controls their bytes: an SVG
+  icon with a `<script>`, or XHTML in the nuspec, would have run with an
+  admin's session if one opened that URL. Every flat-container response now
+  carries `X-Content-Type-Options: nosniff` and
+  `Content-Security-Policy: default-src 'none'; sandbox`, and a stored
+  `.svg` is served as an opaque download instead of `image/svg+xml`
+  (NuGet itself only accepts png and jpeg icons). NuGet clients read none
+  of this.
+- **`javascript:` and other non-web URLs in package metadata are dropped.**
+  `projectUrl`, `licenseUrl`, `repositoryUrl` and `iconUrl` were rendered as
+  links after `esc()`, which keeps a value inside its attribute but says
+  nothing about its scheme. Only `http(s)` URLs are kept at publish time,
+  and versions already stored are filtered again when their page renders.
+  A `repository url` such as `git@github.com:…` is no longer shown — it was
+  never a working link.
+- **A nuspec with a DOCTYPE is refused.** No real nuspec has one, and an
+  internal one is the only way left to define entities (nested ones expand
+  exponentially when read).
+- **A banned account's API keys kept working.** Shield checks a ban in
+  `attempt()`, but the push and private-feed
+  filters validate keys with `check()`, which never looks at the owner.
+  Both filters now refuse a banned account's key with a 403.
+- **Deleting a feed no longer turns the keys scoped to it into unrestricted
+  ones.** A key's restriction *is* its `feed_api_key_rules` rows, a key with
+  none is unrestricted, and those rows cascade away with the feed — so a
+  self-service key confined to a deleted feed could suddenly create
+  packages on any feed that allows it, and a feed-scoped read key could
+  read every private feed. Keys whose rules all pointed at the deleted feed
+  are now revoked with it; a key that also reaches another feed keeps that
+  restriction. Deleting a feed also now requires typing its slug, like
+  deleting a package.
+
+### Upgrading
+
+Nothing to migrate. Two behaviors change on purpose: deleting a feed asks
+for its slug (a script posting to `admin/feeds/{id}/delete` must now send
+`confirm=<slug>`), and keys confined to a feed disappear with it. A Docker
+instance already running keeps working; the lock appears the first time
+it starts on the new image — until then, `/install` is as exposed as before.
+
+There is no way to tell from the outside whether an unlocked instance was
+already taken over before this release. On a Docker deployment that has been
+reachable from the internet, check `/admin/users` for admin accounts you
+did not create.
+
 ## [1.12.2] - 2026-09-03
 
 ### Changed

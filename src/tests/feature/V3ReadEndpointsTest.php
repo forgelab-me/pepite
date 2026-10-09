@@ -231,6 +231,21 @@ final class V3ReadEndpointsTest extends CIUnitTestCase
         $this->assertSame(1, (int) model(PackageModel::class)->find($package['id'])['total_downloads']);
     }
 
+    /**
+     * Package content is attacker-written and served from the admin console's
+     * own origin, so every file under the flat container must be inert in a
+     * browser even if someone opens its URL directly.
+     */
+    public function testEveryFlatContainerFileIsServedAsUntrustedContent(): void
+    {
+        foreach (['pepite.fixtures.rich.nuspec', 'icon', 'readme', 'pepite.fixtures.rich.1.2.3.nupkg'] as $file) {
+            $response = $this->call('get', 'feeds/default/v3/flatcontainer/pepite.fixtures.rich/1.2.3/' . $file)->response();
+
+            $this->assertSame('nosniff', $response->getHeaderLine('X-Content-Type-Options'), $file);
+            $this->assertStringContainsString('sandbox', $response->getHeaderLine('Content-Security-Policy'), $file);
+        }
+    }
+
     public function testServesTheManifestAndTheExtractedAssets(): void
     {
         $nuspec = $this->call('get', 'feeds/default/v3/flatcontainer/pepite.fixtures.rich/1.2.3/pepite.fixtures.rich.nuspec');

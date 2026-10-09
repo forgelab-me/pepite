@@ -147,9 +147,11 @@ final class FlatContainer extends BaseV3Controller
             return $this->notFound('The stored package is missing.');
         }
 
-        return $this->response->download($absolute, null)
-            ->setFileName($fileName)
-            ->setContentType($contentType);
+        return $this->untrusted(
+            $this->response->download($absolute, null)
+                ->setFileName($fileName)
+                ->setContentType($contentType),
+        );
     }
 
     private function inline(string $relativePath, string $contentType): ResponseInterface
@@ -161,18 +163,42 @@ final class FlatContainer extends BaseV3Controller
             return $this->notFound('The stored file is missing.');
         }
 
-        return $this->response
-            ->setContentType($contentType)
-            ->setBody((string) file_get_contents($absolute));
+        return $this->untrusted(
+            $this->response
+                ->setContentType($contentType)
+                ->setBody((string) file_get_contents($absolute)),
+        );
     }
 
+    /**
+     * Everything under here was written by whoever pushed the package, and
+     * is served from the same origin as the admin console. An icon or a
+     * nuspec that a browser is willing to execute — an SVG with a <script>,
+     * XHTML smuggled into the nuspec — would run with an admin's session.
+     * nosniff stops the browser second-guessing the declared type, and a
+     * sandboxed, resource-less CSP stops a document that does get rendered
+     * from running script or loading anything; NuGet clients read neither
+     * header.
+     */
+    private function untrusted(ResponseInterface $response): ResponseInterface
+    {
+        return $response
+            ->setHeader('X-Content-Type-Options', 'nosniff')
+            ->setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    }
+
+    /**
+     * No SVG: it is the one image format that can carry script, and NuGet
+     * itself only accepts png and jpeg for <icon>. A stored .svg is still
+     * served — as an opaque download, never as an image.
+     */
     private function mimeFor(string $path, string $fallback): string
     {
         return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
             'png'         => 'image/png',
             'jpg', 'jpeg' => 'image/jpeg',
             'gif'         => 'image/gif',
-            'svg'         => 'image/svg+xml',
+            'svg'         => 'application/octet-stream',
             'md'          => 'text/markdown',
             'txt'         => 'text/plain',
             default       => $fallback,

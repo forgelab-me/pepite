@@ -64,7 +64,18 @@ final class FeedRead implements FilterInterface
             return $this->challenge('The API key is not valid.');
         }
 
-        $token = $result->extraInfo()->currentAccessToken();
+        $user = $result->extraInfo();
+
+        // check() skips the ban test Shield only does in attempt(); see
+        // NuGetApiKey for the same reasoning.
+        if ($user->isBanned()) {
+            return service('response')
+                ->setStatusCode(403)
+                ->setContentType('application/json')
+                ->setBody(json_encode(['error' => 'This account is suspended.'], JSON_UNESCAPED_SLASHES));
+        }
+
+        $token = $user->currentAccessToken();
 
         if ($token?->can('packages.read') !== true) {
             return service('response')

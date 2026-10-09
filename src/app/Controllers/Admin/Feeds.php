@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use App\Models\PackageModel;
 use CodeIgniter\Controller;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\Shield\Models\UserIdentityModel;
 
 final class Feeds extends Controller
 {
@@ -95,6 +97,14 @@ final class Feeds extends Controller
     {
         $feed = $this->requireFeed($id);
 
+        // Typed, like deleting a package: this removes every package in the
+        // feed and every file behind them, and is at least as irreversible.
+        if ((string) $this->request->getPost('confirm') !== $feed['slug']) {
+            return redirect()->to(site_url('admin/feeds'))->with('error', 'Type the feed slug exactly to confirm its deletion.');
+        }
+
+        $this->revokeKeysConfinedTo($id);
+
         model(FeedModel::class)->delete($id);
 
         $directory = service('packageStorage')->absolute('packages/' . $id);
@@ -104,6 +114,36 @@ final class Feeds extends Controller
         }
 
         return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" deleted.', $feed['slug']));
+    }
+
+    /**
+     * A key's restriction is its feed_api_key_rules rows, and a key with no
+     * rows at all is unrestricted (PublishAuthorizer, FeedRead). Those rows
+     * cascade away with the feed — so a key confined to just this feed would
+     * come out of its deletion able to push to, and read, every other feed.
+     * Revoke those keys instead. One that still has a rule for another feed
+     * (or for every feed) stays restricted and is left alone.
+     */
+    private function revokeKeysConfinedTo(int $feedId): void
+    {
+        $rules       = model(FeedApiKeyRuleModel::class);
+        $identityIds = array_unique(array_map(
+            static fn (array $rule): int => (int) $rule['identity_id'],
+            $rules->where('feed_id', $feedId)->findAll(),
+        ));
+
+        foreach ($identityIds as $identityId) {
+            $elsewhere = $rules->where('identity_id', $identityId)
+                ->groupStart()->where('feed_id !=', $feedId)->orWhere('feed_id', null)->groupEnd()
+                ->countAllResults();
+
+            if ($elsewhere > 0) {
+                continue;
+            }
+
+            model(UserIdentityModel::class)->where('id', $identityId)->where('type', 'access_token')->delete();
+            $rules->where('identity_id', $identityId)->delete();
+        }
     }
 
     /**

@@ -56,6 +56,14 @@ final class Packages extends Controller
             }
         }
 
+        // New pushes are filtered at parse time (NuspecParser::httpUrl()), but
+        // versions published before that still hold whatever their nuspec said.
+        foreach (['license_url', 'project_url', 'repository_url'] as $column) {
+            if (! empty($current[$column]) && preg_match('#\Ahttps?://#i', (string) $current[$column]) !== 1) {
+                $current[$column] = null;
+            }
+        }
+
         $dependencies = model(PackageDependencyModel::class)->forVersion((int) $current['id']);
 
         $usedBy = model(PackageDependencyModel::class)->usedBy(

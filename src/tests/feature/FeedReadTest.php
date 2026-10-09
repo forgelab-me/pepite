@@ -123,6 +123,20 @@ final class FeedReadTest extends CIUnitTestCase
         $result->assertOK();
     }
 
+    public function testABannedAccountsKeyCannotReadAPrivateFeed(): void
+    {
+        $this->makePrivate('default');
+
+        $user  = $this->createUser('banned@pepite.test');
+        $token = $user->generateAccessToken('test', ['packages.read'])->raw_token;
+        $user->ban('abuse');
+
+        $result = $this->withHeaders(['Authorization' => 'Basic ' . base64_encode('x:' . $token)])
+            ->call('get', 'feeds/default/v3/index.json');
+
+        $result->assertStatus(403);
+    }
+
     public function testAMalformedAuthorizationHeaderIsTreatedAsMissing(): void
     {
         $this->makePrivate('default');

@@ -207,11 +207,48 @@ final class AdminConsoleTest extends CIUnitTestCase
         $stored = model(PackageVersionModel::class)->first();
         $this->assertTrue(service('packageStorage')->exists($stored['nupkg_path']));
 
-        $this->postWithCsrf('admin/feeds', 'admin/feeds/' . $feedId . '/delete', [])->assertRedirect();
+        $this->postWithCsrf('admin/feeds', 'admin/feeds/' . $feedId . '/delete', ['confirm' => 'contoso'])->assertRedirect();
 
         $this->assertNull(model(FeedModel::class)->find($feedId));
         $this->assertSame(0, model(PackageModel::class)->where('feed_id', $feedId)->countAllResults());
         $this->assertFalse(service('packageStorage')->exists($stored['nupkg_path']));
+    }
+
+    public function testDeletingAFeedRequiresTheSlugTyped(): void
+    {
+        $feedId = $this->createFeed('contoso', 'Contoso');
+
+        $this->postWithCsrf('admin/feeds', 'admin/feeds/' . $feedId . '/delete', [])->assertRedirect();
+        $this->postWithCsrf('admin/feeds', 'admin/feeds/' . $feedId . '/delete', ['confirm' => 'Contoso'])->assertRedirect();
+
+        $this->assertNotNull(model(FeedModel::class)->find($feedId), 'Neither a missing nor a wrongly-cased confirmation may delete the feed.');
+    }
+
+    /**
+     * A key's restriction is its feed_api_key_rules rows, and a key with none
+     * is unrestricted. Those rows cascade away with the feed, so a key
+     * confined to the deleted feed must be revoked, not left to turn
+     * unrestricted — while one that also reaches another feed stays put.
+     */
+    public function testDeletingAFeedRevokesKeysConfinedToIt(): void
+    {
+        $doomed = $this->createFeed('doomed', 'Doomed');
+        $kept   = $this->createFeed('kept', 'Kept');
+
+        $confined = $this->admin->generateAccessToken('confined', ['packages.push']);
+        $spanning = $this->admin->generateAccessToken('spanning', ['packages.push']);
+        $now      = date('Y-m-d H:i:s');
+
+        $rules = model(FeedApiKeyRuleModel::class);
+        $rules->insert(['identity_id' => (int) $confined->id, 'feed_id' => $doomed, 'created_at' => $now]);
+        $rules->insert(['identity_id' => (int) $spanning->id, 'feed_id' => $doomed, 'created_at' => $now]);
+        $rules->insert(['identity_id' => (int) $spanning->id, 'feed_id' => $kept, 'created_at' => $now]);
+
+        $this->postWithCsrf('admin/feeds', 'admin/feeds/' . $doomed . '/delete', ['confirm' => 'doomed'])->assertRedirect();
+
+        $this->assertNull(model(UserIdentityModel::class)->find($confined->id), 'A key confined to the deleted feed must be revoked.');
+        $this->assertNotNull(model(UserIdentityModel::class)->find($spanning->id));
+        $this->assertSame(1, $rules->where('identity_id', (int) $spanning->id)->countAllResults(), 'Its remaining rule must still restrict it.');
     }
 
     // --------------------------------------------------------- admin packages

@@ -71,11 +71,11 @@ final class NuspecParser
             releaseNotes: $this->text($this->child($metadata, 'releaseNotes')),
             copyright: $this->text($this->child($metadata, 'copyright')),
             language: $this->text($this->child($metadata, 'language')),
-            projectUrl: $this->text($this->child($metadata, 'projectUrl')),
-            iconUrl: $this->text($this->child($metadata, 'iconUrl')),
+            projectUrl: $this->httpUrl($this->text($this->child($metadata, 'projectUrl'))),
+            iconUrl: $this->httpUrl($this->text($this->child($metadata, 'iconUrl'))),
             icon: $this->text($this->child($metadata, 'icon')),
             readme: $this->text($this->child($metadata, 'readme')),
-            licenseUrl: $this->text($this->child($metadata, 'licenseUrl')),
+            licenseUrl: $this->httpUrl($this->text($this->child($metadata, 'licenseUrl'))),
             licenseType: $license === null ? null : ($this->attribute($license, 'type') ?? 'expression'),
             licenseValue: $this->text($license),
             requireLicenseAcceptance: $this->bool($this->text($this->child($metadata, 'requireLicenseAcceptance'))),
@@ -83,7 +83,7 @@ final class NuspecParser
             serviceable: $this->bool($this->text($this->child($metadata, 'serviceable'))),
             minClientVersion: $this->attribute($metadata, 'minClientVersion'),
             repositoryType: $this->repositoryAttribute($metadata, 'type'),
-            repositoryUrl: $this->repositoryAttribute($metadata, 'url'),
+            repositoryUrl: $this->httpUrl($this->repositoryAttribute($metadata, 'url')),
             repositoryBranch: $this->repositoryAttribute($metadata, 'branch'),
             repositoryCommit: $this->repositoryAttribute($metadata, 'commit'),
             packageTypes: $this->parsePackageTypes($metadata),
@@ -117,6 +117,13 @@ final class NuspecParser
             $reason = $errors === [] ? 'unknown parse error' : trim($errors[0]->message);
 
             throw InvalidPackageException::malformedNuspec($reason);
+        }
+
+        // A nuspec never needs a DTD, and an internal one is the only way
+        // left to define entities — nested ones that expand exponentially
+        // the moment textContent walks them.
+        if ($document->doctype !== null) {
+            throw InvalidPackageException::malformedNuspec('a DOCTYPE is not allowed');
         }
 
         $root = $document->documentElement;
@@ -219,6 +226,21 @@ final class NuspecParser
         }
 
         return $dependencies;
+    }
+
+    /**
+     * These end up as href/src values. esc() keeps a value inside its
+     * attribute but says nothing about its scheme, so `javascript:` would
+     * render as a working link — keep http(s) only, and drop anything else
+     * rather than reject the package over a decorative field.
+     */
+    private function httpUrl(?string $url): ?string
+    {
+        if ($url === null) {
+            return null;
+        }
+
+        return preg_match('#\Ahttps?://[^\s<>"\']+\z#i', $url) === 1 ? $url : null;
     }
 
     private function repositoryAttribute(DOMElement $metadata, string $name): ?string
