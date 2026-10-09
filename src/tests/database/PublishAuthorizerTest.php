@@ -255,6 +255,11 @@ final class PublishAuthorizerTest extends CIUnitTestCase
         $package = model(PackageModel::class)->where('package_id_lower', $idLower)->first();
         model(PackageVersionModel::class)->where('package_id', (int) $package['id'])->delete();
 
+        // Its files go with it, as in every real removal. A directory left
+        // standing with no row is what a push in flight looks like, and a
+        // second push of that version rightly yields to it.
+        $this->removeDirectory($this->storageRoot);
+
         return (int) $package['id'];
     }
 

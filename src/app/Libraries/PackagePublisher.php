@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Libraries;
 
 use App\Exceptions\PublishException;
+use App\Exceptions\StorageConflictException;
 use App\Libraries\Package\NupkgReader;
 use App\Libraries\Package\PackageMetadata;
 use App\Models\FeedModel;
@@ -86,7 +87,13 @@ final class PackagePublisher
                 );
             }
 
-            $paths = $this->storage->store($feedId, $reader, $metadata, $nupkgPath);
+            try {
+                $paths = $this->storage->store($feedId, $reader, $metadata, $nupkgPath);
+            } catch (StorageConflictException) {
+                // Another push of this very version got to the directory
+                // first. Same answer as if it had already committed.
+                throw PublishException::versionAlreadyExists($metadata->id, $metadata->version->normalized());
+            }
 
             return $this->persist($feed, $package, $metadata, $reader, $paths, $ownerUserId);
         } finally {
@@ -142,7 +149,10 @@ final class PackagePublisher
             $this->db->transCommit();
         } catch (Throwable $e) {
             $this->db->transRollback();
-            $this->discardBlobs($packageRowId ?? null, $metadata, $paths['directory']);
+
+            // store() only returns once this push owns the directory, so
+            // removing it can never take another push's files with it.
+            $this->storage->discard($paths['directory']);
 
             throw $e;
         }
@@ -263,22 +273,6 @@ final class PackagePublisher
             array_map(static fn ($type): string => $type->name, $metadata->effectivePackageTypes()),
             $allowed,
         );
-    }
-
-    /**
-     * Leaves the blobs alone if the version now exists anyway.
-     *
-     * Two concurrent pushes of the same version share a storage directory. The
-     * unique constraint decides which one wins; the loser must not delete the
-     * winner's files on its way out.
-     */
-    private function discardBlobs(?int $packageRowId, PackageMetadata $metadata, string $directory): void
-    {
-        if ($packageRowId !== null && $this->versions->versionExists($packageRowId, $metadata->version)) {
-            return;
-        }
-
-        $this->storage->discard($directory);
     }
 
     /**

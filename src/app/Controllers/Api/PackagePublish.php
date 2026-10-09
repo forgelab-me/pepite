@@ -10,7 +10,6 @@ use App\Exceptions\PayloadTooLargeException;
 use App\Exceptions\PublishException;
 use App\Libraries\Package\NupkgReader;
 use App\Models\PackageModel;
-use App\Models\PackageOwnerModel;
 use App\Models\PackageVersionModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -139,7 +138,7 @@ final class PackagePublish extends Controller
             return $this->error(404, sprintf('No package named "%s" in feed "%s".', $metadata->id, $slug));
         }
 
-        if ($error = $this->requireOwnership((int) $package['id'], $metadata->id)) {
+        if ($error = $this->requireOwnership((int) $feed['id'], $package, $metadata->id)) {
             return $error;
         }
 
@@ -178,7 +177,7 @@ final class PackagePublish extends Controller
             return $this->error(404, sprintf('No package named "%s" in feed "%s".', $id, $slug));
         }
 
-        if ($error = $this->requireOwnership((int) $package['id'], $id)) {
+        if ($error = $this->requireOwnership((int) $feed['id'], $package, $id)) {
             return $error;
         }
 
@@ -227,18 +226,28 @@ final class PackagePublish extends Controller
     /**
      * Guards unlist, relist and symbol upload: pushing a new package is
      * gated by PublishAuthorizer inside the publisher, but these three act on
-     * a package that already exists, so ownership has to be checked here too
-     * — otherwise any key with the unlist scope could delist anyone's package.
+     * a package that already exists, so they have to ask it too — otherwise
+     * any key with the unlist scope could delist anyone's package (ownership),
+     * and a key restricted to one feed or identifier pattern could still
+     * reach its owner's packages everywhere else (key reach).
+     *
+     * @param array<string, mixed> $package
      */
-    private function requireOwnership(int $packageRowId, string $packageId): ?ResponseInterface
+    private function requireOwnership(int $feedId, array $package, string $packageId): ?ResponseInterface
     {
-        $userId = $this->currentUserId();
+        $identityId = $this->currentIdentityId();
 
-        if ($userId !== null && model(PackageOwnerModel::class)->owns($packageRowId, $userId)) {
-            return null;
+        if ($identityId === null) {
+            return $this->error(403, sprintf('You are not an owner of "%s".', $packageId));
         }
 
-        return $this->error(403, sprintf('You are not an owner of "%s".', $packageId));
+        try {
+            service('publishAuthorizer')->authorize($identityId, $this->currentUserId(), $feedId, $packageId, $package);
+        } catch (PublishException $e) {
+            return $this->error($e->status, $e->getMessage());
+        }
+
+        return null;
     }
 
     private function currentUserId(): ?int

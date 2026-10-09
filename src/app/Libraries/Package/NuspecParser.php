@@ -57,6 +57,12 @@ final class NuspecParser
             throw new InvalidPackageException($e->getMessage(), 0, $e);
         }
 
+        // The version is stored three ways (original, normalized, sort key)
+        // in columns of 128, 128 and 255 characters.
+        if (strlen($rawVersion) > 128 || strlen($version->normalized()) > 128 || strlen($version->sortKey()) > 255) {
+            throw InvalidPackageException::fieldTooLong('version', 128);
+        }
+
         $license = $this->child($metadata, 'license');
 
         return new PackageMetadata(
@@ -66,26 +72,26 @@ final class NuspecParser
             authors: $this->splitList($this->text($this->child($metadata, 'authors'))),
             owners: $this->splitList($this->text($this->child($metadata, 'owners'))),
             tags: $this->splitTags($this->text($this->child($metadata, 'tags'))),
-            title: $this->text($this->child($metadata, 'title')),
+            title: $this->bounded($this->text($this->child($metadata, 'title')), 255, 'title'),
             summary: $this->text($this->child($metadata, 'summary')),
             releaseNotes: $this->text($this->child($metadata, 'releaseNotes')),
-            copyright: $this->text($this->child($metadata, 'copyright')),
-            language: $this->text($this->child($metadata, 'language')),
+            copyright: $this->bounded($this->text($this->child($metadata, 'copyright')), 255, 'copyright'),
+            language: $this->bounded($this->text($this->child($metadata, 'language')), 32, 'language'),
             projectUrl: $this->httpUrl($this->text($this->child($metadata, 'projectUrl'))),
             iconUrl: $this->httpUrl($this->text($this->child($metadata, 'iconUrl'))),
             icon: $this->text($this->child($metadata, 'icon')),
             readme: $this->text($this->child($metadata, 'readme')),
             licenseUrl: $this->httpUrl($this->text($this->child($metadata, 'licenseUrl'))),
-            licenseType: $license === null ? null : ($this->attribute($license, 'type') ?? 'expression'),
-            licenseValue: $this->text($license),
+            licenseType: $license === null ? null : $this->bounded($this->attribute($license, 'type') ?? 'expression', 16, 'license type'),
+            licenseValue: $this->bounded($this->text($license), 255, 'license'),
             requireLicenseAcceptance: $this->bool($this->text($this->child($metadata, 'requireLicenseAcceptance'))),
             developmentDependency: $this->bool($this->text($this->child($metadata, 'developmentDependency'))),
             serviceable: $this->bool($this->text($this->child($metadata, 'serviceable'))),
-            minClientVersion: $this->attribute($metadata, 'minClientVersion'),
-            repositoryType: $this->repositoryAttribute($metadata, 'type'),
+            minClientVersion: $this->bounded($this->attribute($metadata, 'minClientVersion'), 32, 'minClientVersion'),
+            repositoryType: $this->bounded($this->repositoryAttribute($metadata, 'type'), 32, 'repository type'),
             repositoryUrl: $this->httpUrl($this->repositoryAttribute($metadata, 'url')),
-            repositoryBranch: $this->repositoryAttribute($metadata, 'branch'),
-            repositoryCommit: $this->repositoryAttribute($metadata, 'commit'),
+            repositoryBranch: $this->bounded($this->repositoryAttribute($metadata, 'branch'), 255, 'repository branch'),
+            repositoryCommit: $this->bounded($this->repositoryAttribute($metadata, 'commit'), 128, 'repository commit'),
             packageTypes: $this->parsePackageTypes($metadata),
             dependencyGroups: $this->parseDependencies($metadata),
         );
@@ -187,7 +193,7 @@ final class NuspecParser
         }
 
         foreach ($this->children($container, 'group') as $element) {
-            $framework = $this->attribute($element, 'targetFramework');
+            $framework = $this->bounded($this->attribute($element, 'targetFramework'), 128, 'dependency targetFramework');
 
             $groups[] = new DependencyGroup(
                 $framework === null || $framework === '' ? null : $framework,
@@ -206,13 +212,13 @@ final class NuspecParser
         $dependencies = [];
 
         foreach ($this->children($parent, 'dependency') as $element) {
-            $id = $this->attribute($element, 'id');
+            $id = $this->bounded($this->attribute($element, 'id'), 128, 'dependency id');
 
             if ($id === null) {
                 continue;
             }
 
-            $rawRange = $this->attribute($element, 'version');
+            $rawRange = $this->bounded($this->attribute($element, 'version'), 255, 'dependency version range');
 
             $dependencies[] = new PackageDependency(
                 $id,
@@ -220,8 +226,8 @@ final class NuspecParser
                 // for: treat it as "any version", which is what an absent
                 // version attribute already means.
                 $rawRange === null ? null : VersionRange::tryParse($rawRange),
-                $this->attribute($element, 'include'),
-                $this->attribute($element, 'exclude'),
+                $this->bounded($this->attribute($element, 'include'), 255, 'dependency include'),
+                $this->bounded($this->attribute($element, 'exclude'), 255, 'dependency exclude'),
             );
         }
 
@@ -236,11 +242,30 @@ final class NuspecParser
      */
     private function httpUrl(?string $url): ?string
     {
-        if ($url === null) {
+        // 512 is the column width. An over-long link is as decorative as a
+        // wrong-scheme one, so it is dropped the same way instead of
+        // failing the push.
+        if ($url === null || strlen($url) > 512) {
             return null;
         }
 
         return preg_match('#\Ahttps?://[^\s<>"\']+\z#i', $url) === 1 ? $url : null;
+    }
+
+    /**
+     * A value that does not fit its column. MySQL in strict mode fails the
+     * insert with a 500; in non-strict mode it truncates silently, and
+     * SQLite — which has no limit at all — accepts it, so the same push
+     * behaves three ways depending on the host. Refused up front, with the
+     * field named, it behaves one way everywhere.
+     */
+    private function bounded(?string $value, int $max, string $field): ?string
+    {
+        if ($value !== null && mb_strlen($value) > $max) {
+            throw InvalidPackageException::fieldTooLong($field, $max);
+        }
+
+        return $value;
     }
 
     private function repositoryAttribute(DOMElement $metadata, string $name): ?string

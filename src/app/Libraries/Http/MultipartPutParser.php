@@ -34,6 +34,14 @@ final class MultipartPutParser
      */
     private const MAX_BOUNDARY_LENGTH = 70;
 
+    /**
+     * A push is one file, plus at most a handful of small fields. Without a
+     * ceiling the byte limit alone still lets a body of a hundred thousand
+     * tiny parts through — each kept in memory, or given its own temporary
+     * file.
+     */
+    private const MAX_PARTS = 16;
+
     public function __construct(
         private readonly int $maxBytes,
         private readonly string $temporaryDirectory,
@@ -134,6 +142,10 @@ final class MultipartPutParser
             }
 
             $state->buffer = substr($state->buffer, 2);
+
+            if (count($state->parts) >= self::MAX_PARTS) {
+                throw MultipartException::malformed('the body has too many parts');
+            }
 
             $headers        = $this->readHeaders($stream, $state);
             $state->parts[] = $this->readPart($stream, $state, $delimiter, $headers);

@@ -66,6 +66,15 @@ final class WebNavigationTest extends CIUnitTestCase
         $this->call('get', '/')->assertOK();
     }
 
+    public function testPagesCarryTheSecureHeaders(): void
+    {
+        $response = $this->call('get', '/')->response();
+
+        $this->assertSame('SAMEORIGIN', $response->getHeaderLine('X-Frame-Options'));
+        $this->assertSame('nosniff', $response->getHeaderLine('X-Content-Type-Options'));
+        $this->assertSame('same-origin', $response->getHeaderLine('Referrer-Policy'));
+    }
+
     public function testFeedPageListsItsPackages(): void
     {
         $result = $this->call('get', 'browse/default');

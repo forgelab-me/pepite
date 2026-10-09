@@ -31,6 +31,16 @@ final class NupkgReader
     private const OPC_FILES = ['[Content_Types].xml', '.signature.p7s'];
 
     /**
+     * collectEntries() lists the whole central directory into memory before
+     * anything else looks at the archive, so its size is only as bounded as
+     * the entry count — and a few MB of zip can declare millions of empty
+     * entries. Far above any real package (a runtime pack is in the
+     * hundreds, a package that embeds a web app's assets in the low
+     * thousands).
+     */
+    public const MAX_ENTRIES = 20000;
+
+    /**
      * @var list<string>
      */
     private array $entries;
@@ -291,6 +301,10 @@ final class NupkgReader
     {
         $zip     = $this->zip();
         $entries = [];
+
+        if ($zip->numFiles > self::MAX_ENTRIES) {
+            throw InvalidPackageException::tooManyEntries(self::MAX_ENTRIES);
+        }
 
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);

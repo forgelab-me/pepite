@@ -9,6 +9,67 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.4] - 2026-10-09
+
+Second batch from the security and architecture review: hardening of what an
+uploader controls and of the HTTP surface.
+
+### Security
+
+- **Two concurrent pushes of the same new version could destroy each
+  other's files.** Both wrote into one shared directory, so one could
+  overwrite the other's bytes — leaving a stored archive that no longer
+  matched the hash recorded for it — and the loser, cleaning up after its
+  failed database insert, deleted the winner's directory outright, leaving a
+  committed version pointing at nothing. A push is now built in a private
+  staging directory and moved into place with one atomic `rename()`; exactly
+  one push owns the destination, the other answers `409`, and only the owner
+  ever removes it. A directory standing at the destination with no row
+  behind it is a push in flight, or the leftover of one that died — so it is
+  respected for ten minutes and cleared after that, which means a crashed
+  push can't block a version forever.
+- **Unlisting, relisting and symbol upload now honour the key's reach.**
+  They asked "do you own it" but never "may this key touch it", so a key
+  restricted to one feed or identifier pattern could still delist its
+  owner's packages everywhere else. They now go through the same
+  `PublishAuthorizer` check as a push.
+- **Search no longer treats `%` and `_` as wildcards.** The terms were
+  escaped, but the raw SQL fragment carried no `ESCAPE` clause, so the
+  escaping did nothing: a search for `pepite_fixtures` matched
+  `Pepite.Fixtures.*` and a bare `%` matched every package. The number and
+  length of search terms is also capped (6 terms of 64 characters) — each
+  one is three `LIKE '%…%'` scans on an endpoint anyone can call.
+- **Uploads are bounded in more than bytes.** A push carries at most 16
+  multipart parts and a package at most 20 000 archive entries; the central
+  directory was read fully into memory before anything else looked at it,
+  so a few MB of zip could declare millions of empty entries. Nuspec fields
+  longer than their database column (title, copyright, license, repository
+  fields, dependency ids and ranges, the version itself) are refused with
+  the field named, instead of failing as a `500` on MySQL in strict mode,
+  being silently truncated in non-strict mode, and passing untouched on
+  SQLite.
+- **Pages carry `X-Frame-Options`, `X-Content-Type-Options` and
+  `Referrer-Policy`** (CodeIgniter's `secureheaders` filter, enabled
+  globally), so the admin forms can no longer be framed by another site.
+  There is still no `Content-Security-Policy` on HTML pages: the views carry
+  inline scripts and `onsubmit` handlers, so a policy that protects anything
+  needs nonces across all of them first.
+- **Session and CSRF cookies are marked `Secure` whenever the base URL is
+  `https://`.** Plain-HTTP setups (local development) are untouched —
+  `Secure` there would make the browser drop the cookie.
+
+### Upgrading
+
+Nothing to migrate. Behaviour that changes on purpose:
+
+- A push whose nuspec has a field longer than its column is now a `400`
+  naming the field.
+- A version directory left on disk with no database row (a database restored
+  from an older backup, say) blocks a push of that version with a `409` for
+  ten minutes, then is cleared. Files from a push that died mid-way can also
+  leave a `.incoming-*` directory under `packages/{feedId}/`; they are
+  harmless and safe to delete.
+
 ## [1.12.3] - 2026-10-09
 
 First batch from a security and architecture review of the whole app, now

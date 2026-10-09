@@ -234,6 +234,12 @@ final class PackagePublisherTest extends CIUnitTestCase
 
         // Same identifier reaching the feed a second time, by another user.
         model(PackageVersionModel::class)->where('package_id', $first->packageRowId)->delete();
+
+        // Its files go with it, as they do in every real removal (purge,
+        // feed deletion). A directory left standing with no row behind it is
+        // what a push in flight looks like, and a second push rightly yields.
+        $this->removeDirectory($this->storageRoot);
+
         $second = $this->publish('Pepite.Fixtures.Simple.1.0.0.nupkg', owner: 7);
 
         $this->assertFalse($second->claimedNewIdentifier);

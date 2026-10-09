@@ -104,4 +104,20 @@ class Cookie extends BaseConfig
      * @see https://tools.ietf.org/html/rfc2616#section-2.2
      */
     public bool $raw = false;
+
+    /**
+     * An instance served over HTTPS marks its session and CSRF cookies
+     * Secure without being asked, so they can never travel over a plain-HTTP
+     * request to the same host. Plain-HTTP setups (local development, a
+     * test) are left as they are — Secure there would make the browser drop
+     * the cookie and nobody could log in.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        if (str_starts_with(strtolower(config('App')->baseURL), 'https://')) {
+            $this->secure = true;
+        }
+    }
 }

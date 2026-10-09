@@ -8,6 +8,9 @@ use CodeIgniter\Model;
 
 final class PackageModel extends Model
 {
+    private const MAX_TERMS       = 6;
+    private const MAX_TERM_LENGTH = 64;
+
     protected $table         = 'packages';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
@@ -197,13 +200,31 @@ final class PackageModel extends Model
         // NuGet's own syntax supports field prefixes (id:, tags:). Only the
         // free-text form is handled here; a field prefix degrades to a literal
         // term rather than being silently dropped.
-        return array_values(array_filter(preg_split('/\s+/', $trimmed) ?: []));
+        $terms = array_values(array_filter(preg_split('/\s+/', $trimmed) ?: []));
+
+        // Each term is three LIKE '%…%' scans per package, on an endpoint
+        // anyone can call. No real search has more than a few words.
+        return array_map(
+            static fn (string $term): string => mb_substr($term, 0, self::MAX_TERM_LENGTH),
+            array_slice($terms, 0, self::MAX_TERMS),
+        );
+    }
+
+    /**
+     * escapeLikeString() prefixes %, _ and the escape character with `!`, but
+     * that only means something to the database if the statement says so —
+     * the query builder appends the ESCAPE clause on its own, a raw fragment
+     * has to. Without it `My_Pkg` matches `MyXPkg`.
+     */
+    private function likePattern(string $value): string
+    {
+        return "'%" . $this->db->escapeLikeString($value) . "%'"
+            . sprintf($this->db->likeEscapeStr, $this->db->likeEscapeChar);
     }
 
     private function termClause(string $term): string
     {
-        $escaped  = $this->db->escapeLikeString(strtolower($term));
-        $pattern  = "'%" . $escaped . "%'";
+        $pattern  = $this->likePattern(strtolower($term));
         $versions = $this->db->prefixTable('package_versions');
         $packages = $this->db->prefixTable('packages');
 
@@ -258,8 +279,7 @@ final class PackageModel extends Model
         }
 
         if ($packageType !== null && trim($packageType) !== '') {
-            $needle       = $this->db->escapeLikeString('"name":"' . strtolower(trim($packageType)) . '"');
-            $conditions[] = "LOWER(v.package_types) LIKE '%" . $needle . "%'";
+            $conditions[] = 'LOWER(v.package_types) LIKE ' . $this->likePattern('"name":"' . strtolower(trim($packageType)) . '"');
         }
 
         return sprintf('EXISTS (SELECT 1 FROM %s v WHERE %s)', $versions, implode(' AND ', $conditions));

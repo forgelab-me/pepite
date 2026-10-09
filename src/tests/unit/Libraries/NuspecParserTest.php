@@ -39,6 +39,33 @@ final class NuspecParserTest extends CIUnitTestCase
         $this->assertSame('https://example.test/icon.png', $metadata->iconUrl);
     }
 
+    public function testAnOverLongLinkIsDroppedNotRejected(): void
+    {
+        $metadata = $this->parser->parse($this->nuspec(
+            '<projectUrl>https://example.test/' . str_repeat('a', 600) . '</projectUrl>',
+        ));
+
+        $this->assertNull($metadata->projectUrl);
+    }
+
+    public function testAValueThatDoesNotFitItsColumnIsRefusedWithTheFieldNamed(): void
+    {
+        $this->expectException(InvalidPackageException::class);
+        $this->expectExceptionMessageMatches('/title.*255/');
+
+        $this->parser->parse($this->nuspec('<title>' . str_repeat('t', 256) . '</title>'));
+    }
+
+    public function testAnOverLongDependencyIdIsRefused(): void
+    {
+        $this->expectException(InvalidPackageException::class);
+        $this->expectExceptionMessageMatches('/dependency id.*128/');
+
+        $this->parser->parse($this->nuspec(
+            '<dependencies><dependency id="' . str_repeat('A', 129) . '" version="1.0.0"/></dependencies>',
+        ));
+    }
+
     public function testADoctypeIsRefused(): void
     {
         $this->expectException(InvalidPackageException::class);

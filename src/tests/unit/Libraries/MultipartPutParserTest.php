@@ -159,6 +159,20 @@ final class MultipartPutParserTest extends CIUnitTestCase
         $this->assertSame('PK-payload', file_get_contents($body->part('package')->path));
     }
 
+    public function testRefusesABodyWithTooManyParts(): void
+    {
+        $parts = [];
+
+        for ($i = 0; $i < 17; $i++) {
+            $parts[] = ['headers' => ['Content-Disposition' => 'form-data; name="f' . $i . '"'], 'body' => 'x'];
+        }
+
+        $this->expectException(MultipartException::class);
+        $this->expectExceptionMessageMatches('/too many parts/');
+
+        $this->parse($this->compose('X', $parts));
+    }
+
     public function testHandlesAnEmptyFilePart(): void
     {
         $body = $this->parse($this->compose('X', [

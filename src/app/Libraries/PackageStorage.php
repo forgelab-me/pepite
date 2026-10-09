@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Libraries;
 
+use App\Exceptions\StorageConflictException;
 use App\Libraries\Package\NupkgReader;
 use App\Libraries\Package\PackageMetadata;
 use App\Libraries\Version\NuGetVersion;
 use RuntimeException;
+use Throwable;
 
 /**
  * Package blobs on disk.
@@ -22,9 +24,20 @@ use RuntimeException;
  *
  * Paths recorded in the database are relative to that root, so moving the
  * storage — or restoring it elsewhere — needs no data migration.
+ *
+ * A version directory is built under packages/{feed}/.incoming-{random}/ and
+ * moved into place with a single rename (see store()/claim()): the move is
+ * what decides which of two concurrent pushes owns the directory.
  */
 final class PackageStorage
 {
+    /**
+     * How long a version directory with no committed row behind it is
+     * assumed to belong to a push still in flight. A push is seconds of
+     * extraction and one transaction; ten minutes is far past that.
+     */
+    private const ORPHAN_GRACE_SECONDS = 600;
+
     public function __construct(
         private readonly string $root,
         private readonly int $maxAssetBytes,
@@ -75,24 +88,40 @@ final class PackageStorage
         string $sourcePath,
     ): array {
         $directory = $this->directoryFor($feedId, $metadata->id, $metadata->version);
-        $this->makeDirectory($directory);
+        $base      = sprintf('%s.%s', $metadata->idLower(), $metadata->version->normalizedLower());
 
-        $base = sprintf('%s.%s', $metadata->idLower(), $metadata->version->normalizedLower());
+        // Everything is written into a private staging directory and moved
+        // into place in one step at the end. Writing straight into the final
+        // directory let two concurrent pushes of the same version overwrite
+        // each other's bytes — and let the loser, cleaning up after itself,
+        // delete the winner's files. A rename is atomic: exactly one push
+        // gets to own the directory, and only that one ever touches it again.
+        $staging = sprintf('packages/%d/.incoming-%s', $feedId, bin2hex(random_bytes(6)));
+        $this->makeDirectory($staging);
 
-        $nupkg = $directory . '/' . $base . '.nupkg';
-        $this->copyInto($sourcePath, $nupkg);
+        try {
+            $this->copyInto($sourcePath, $staging . '/' . $base . '.nupkg');
 
-        // Kept verbatim rather than re-serialised: the flat container has to
-        // serve back the exact bytes the author published.
-        $nuspec = $directory . '/' . $metadata->idLower() . '.nuspec';
-        $this->write($nuspec, $reader->nuspecXml());
+            // Kept verbatim rather than re-serialised: the flat container has
+            // to serve back the exact bytes the author published.
+            $this->write($staging . '/' . $metadata->idLower() . '.nuspec', $reader->nuspecXml());
+
+            $icon   = $this->extractAsset($reader, $metadata->icon, $directory, 'icon', $staging);
+            $readme = $this->extractAsset($reader, $metadata->readme, $directory, 'readme', $staging);
+
+            $this->claim($staging, $directory);
+        } catch (Throwable $e) {
+            $this->discard($staging);
+
+            throw $e;
+        }
 
         return [
             'directory' => $directory,
-            'nupkg'     => $nupkg,
-            'nuspec'    => $nuspec,
-            'icon'      => $this->extractAsset($reader, $metadata->icon, $directory, 'icon'),
-            'readme'    => $this->extractAsset($reader, $metadata->readme, $directory, 'readme'),
+            'nupkg'     => $directory . '/' . $base . '.nupkg',
+            'nuspec'    => $directory . '/' . $metadata->idLower() . '.nuspec',
+            'icon'      => $icon,
+            'readme'    => $readme,
         ];
     }
 
@@ -166,6 +195,7 @@ final class PackageStorage
         ?string $declaredPath,
         string $directory,
         string $kind,
+        string $writeDirectory,
     ): ?string {
         if ($declaredPath === null) {
             return null;
@@ -183,12 +213,42 @@ final class PackageStorage
         $relative = sprintf('%s/%s.%s', $directory, $kind, $extension);
 
         try {
-            $reader->extractEntry($entry, $this->absolute($relative), $this->maxAssetBytes);
+            $reader->extractEntry($entry, $this->absolute($writeDirectory . '/' . basename($relative)), $this->maxAssetBytes);
         } catch (RuntimeException) {
             return null;
         }
 
+        // The path to record is where the file will live once claim() has
+        // moved the staging directory there, not where it is written now.
         return $relative;
+    }
+
+    /**
+     * Moves a fully written staging directory to its final place.
+     *
+     * Publishing checks the database for the version before it gets here, so
+     * a directory already standing at the destination is not a committed
+     * version. It is either another push of this very version, still between
+     * claiming the directory and committing its rows, or the leftover of one
+     * that died there. Only age tells those apart: a push takes seconds, so
+     * anything older than the grace period is cleared away; anything younger
+     * is left alone and this push is the one that loses.
+     *
+     * @throws StorageConflictException when another push holds the destination
+     */
+    private function claim(string $staging, string $destination): void
+    {
+        $this->makeDirectory(dirname($destination));
+
+        $target = $this->absolute($destination);
+
+        if (is_dir($target) && (time() - (int) filemtime($target)) > self::ORPHAN_GRACE_SECONDS) {
+            $this->discard($destination);
+        }
+
+        if (! @rename($this->absolute($staging), $target)) {
+            throw new StorageConflictException(sprintf('"%s" is already being written by another push.', $destination));
+        }
     }
 
     private function makeDirectory(string $relativeDirectory): void

@@ -57,6 +57,16 @@ final class InvalidPackageException extends RuntimeException
         return new self(sprintf('The package has no entry named "%s".', $entry));
     }
 
+    public static function fieldTooLong(string $field, int $max): self
+    {
+        return new self(sprintf('The nuspec\'s %s is longer than the %d characters allowed.', $field, $max));
+    }
+
+    public static function tooManyEntries(int $limit): self
+    {
+        return new self(sprintf('The package holds more than %d entries.', $limit));
+    }
+
     public static function entryTooLarge(string $entry, int $limit): self
     {
         return new self(sprintf(

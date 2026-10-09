@@ -361,16 +361,16 @@
         },
         {
             "name": "forgelab-me/ci4-trusted-publishing",
-            "version": "1.1.0",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/forgelab-me/ci4-trusted-publishing.git",
-                "reference": "2103fd91dcd4382eeea9096be3aea0bddf5f2ece"
+                "reference": "a2de7d50623aa2d50297e5008df475e284de3d34"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/forgelab-me/ci4-trusted-publishing/zipball/2103fd91dcd4382eeea9096be3aea0bddf5f2ece",
-                "reference": "2103fd91dcd4382eeea9096be3aea0bddf5f2ece",
+                "url": "https://api.github.com/repos/forgelab-me/ci4-trusted-publishing/zipball/a2de7d50623aa2d50297e5008df475e284de3d34",
+                "reference": "a2de7d50623aa2d50297e5008df475e284de3d34",
                 "shasum": ""
             },
             "require": {
@@ -416,22 +416,22 @@
             ],
             "support": {
                 "issues": "https://github.com/forgelab-me/ci4-trusted-publishing/issues",
-                "source": "https://github.com/forgelab-me/ci4-trusted-publishing/tree/1.1.0"
+                "source": "https://github.com/forgelab-me/ci4-trusted-publishing/tree/1.2.0"
             },
-            "time": "2026-08-26T18:02:03+00:00"
+            "time": "2026-10-09T14:28:07+00:00"
         },
         {
             "name": "forgelab-me/ci4-updater",
-            "version": "v2.17.0",
+            "version": "v2.17.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/forgelab-me/ci4-updater.git",
-                "reference": "f1d087be4e98991989c50870f798ee175ef2530d"
+                "reference": "528a6bd65f38966605518f899f97c70620dc3db7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/forgelab-me/ci4-updater/zipball/f1d087be4e98991989c50870f798ee175ef2530d",
-                "reference": "f1d087be4e98991989c50870f798ee175ef2530d",
+                "url": "https://api.github.com/repos/forgelab-me/ci4-updater/zipball/528a6bd65f38966605518f899f97c70620dc3db7",
+                "reference": "528a6bd65f38966605518f899f97c70620dc3db7",
                 "shasum": ""
             },
             "require": {
@@ -476,7 +476,7 @@
                 "issues": "https://github.com/forgelab-me/ci4-updater/issues",
                 "source": "https://github.com/forgelab-me/ci4-updater"
             },
-            "time": "2026-08-26T18:27:51+00:00"
+            "time": "2026-10-09T14:24:48+00:00"
         },
         {
             "name": "laminas/laminas-escaper",

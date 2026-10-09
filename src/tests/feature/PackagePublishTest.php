@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Filters\NuGetApiKey;
 use App\Libraries\PackageStorage;
+use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use App\Models\PackageModel;
 use App\Models\PackageOwnerModel;
@@ -261,7 +262,81 @@ final class PackagePublishTest extends CIUnitTestCase
         $this->assertSame(0, model(PackageVersionModel::class)->countAllResults());
     }
 
+    /**
+     * Two pushes of one version used to share a directory: the loser could
+     * overwrite the winner's bytes, then delete the winner's files while
+     * cleaning up after itself. A directory already standing there, and
+     * young, is another push in flight — this one must lose without
+     * touching it.
+     */
+    public function testALosingConcurrentPushAnswers409AndLeavesTheWinnersFilesAlone(): void
+    {
+        $directory = $this->versionDirectory('pepite.fixtures.simple', '1.0.0');
+        mkdir($directory, 0o775, true);
+        file_put_contents($directory . '/winner.nupkg', 'the winner\'s bytes');
+
+        $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg')->assertStatus(409);
+
+        $this->assertSame('the winner\'s bytes', file_get_contents($directory . '/winner.nupkg'));
+        $this->assertSame(0, model(PackageVersionModel::class)->countAllResults());
+    }
+
+    /**
+     * The other half: a push that died after taking the directory and before
+     * committing leaves it behind with no row. It must not block that
+     * version for good — once it is old enough that no push can still be
+     * using it, the next one clears it.
+     */
+    public function testALeftoverDirectoryFromADeadPushDoesNotBlockThePublication(): void
+    {
+        $directory = $this->versionDirectory('pepite.fixtures.simple', '1.0.0');
+        mkdir($directory, 0o775, true);
+        file_put_contents($directory . '/leftover.nupkg', 'from a push that died');
+        touch($directory, time() - 3600);
+
+        $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg')->assertStatus(201);
+
+        $this->assertFileDoesNotExist($directory . '/leftover.nupkg');
+        $this->assertSame(1, model(PackageVersionModel::class)->countAllResults());
+    }
+
+    public function testAFailedPushLeavesNoStagingDirectoryBehind(): void
+    {
+        $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg')->assertStatus(201);
+        $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg')->assertStatus(409);
+
+        $feedId = (int) model(FeedModel::class)->findBySlug('default')['id'];
+
+        $this->assertSame([], glob($this->storageRoot . '/packages/' . $feedId . '/.incoming-*') ?: []);
+    }
+
     // -------------------------------------------------- unlist and relist
+
+    /**
+     * Unlisting asked only "do you own it", never "may this key reach it" —
+     * so a key restricted to one feed could still delist its owner's
+     * packages on every other.
+     */
+    public function testAKeyRestrictedToAnotherFeedCannotUnlist(): void
+    {
+        $this->push('Pepite.Fixtures.Simple.1.0.0.nupkg')->assertStatus(201);
+
+        $owner = model(UserModel::class)->findByCredentials(['email' => 'pusher@pepite.test']);
+        model(FeedModel::class)->insert(['slug' => 'other', 'name' => 'Other']);
+
+        $scoped = $owner->generateAccessToken('scoped', [NuGetApiKey::SCOPE_UNLIST]);
+        model(FeedApiKeyRuleModel::class)->insert([
+            'identity_id' => (int) $scoped->id,
+            'feed_id'     => (int) model(FeedModel::class)->findBySlug('other')['id'],
+            'created_at'  => date('Y-m-d H:i:s'),
+        ]);
+
+        $this->withHeaders(['X-NuGet-ApiKey' => $scoped->raw_token])
+            ->call('delete', 'feeds/default/api/v2/package/Pepite.Fixtures.Simple/1.0.0')
+            ->assertStatus(403);
+
+        $this->assertSame(1, (int) model(PackageVersionModel::class)->first()['is_listed']);
+    }
 
     public function testUnlistHidesFromSearchButKeepsTheBlobDownloadable(): void
     {
@@ -321,6 +396,13 @@ final class PackagePublishTest extends CIUnitTestCase
             'X-NuGet-ApiKey' => $key ?? $this->pushKey,
             'Content-Type'   => MultipartBuilder::contentType(),
         ])->withBody($body)->call('put', 'feeds/' . $feed . '/api/v2/package');
+    }
+
+    private function versionDirectory(string $idLower, string $version): string
+    {
+        $feedId = (int) model(FeedModel::class)->findBySlug('default')['id'];
+
+        return $this->storageRoot . '/packages/' . $feedId . '/' . $idLower . '/' . $version;
     }
 
     private function createUser(string $email): User

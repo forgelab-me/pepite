@@ -99,7 +99,11 @@ class Filters extends BaseFilters
         ],
         'after' => [
             // 'honeypot',
-            // 'secureheaders',
+            // X-Frame-Options (the admin forms are clickjackable without it),
+            // nosniff, Referrer-Policy. No Content-Security-Policy yet: the
+            // views carry inline scripts and onsubmit handlers, so a CSP that
+            // protects anything needs nonces across all of them first.
+            'secureheaders',
         ],
     ];
 

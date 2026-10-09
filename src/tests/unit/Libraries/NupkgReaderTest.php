@@ -201,6 +201,20 @@ final class NupkgReaderTest extends CIUnitTestCase
         yield 'current directory' => ['./evil.txt'];
     }
 
+    public function testRefusesAnArchiveWithMoreEntriesThanAnyRealPackageHas(): void
+    {
+        $entries = [];
+
+        for ($i = 0; $i <= NupkgReader::MAX_ENTRIES; $i++) {
+            $entries['content/f' . $i . '.txt'] = '';
+        }
+
+        $this->expectException(InvalidPackageException::class);
+        $this->expectExceptionMessageMatches('/more than \d+ entries/');
+
+        NupkgReader::open($this->makeZip($entries));
+    }
+
     public function testRejectsAnArchiveWithoutANuspec(): void
     {
         $reader = NupkgReader::open($this->makeZip(['lib/net10.0/Thing.dll' => 'binary']));

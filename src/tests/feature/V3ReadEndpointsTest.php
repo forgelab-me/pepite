@@ -352,6 +352,25 @@ final class V3ReadEndpointsTest extends CIUnitTestCase
 
     // --------------------------------------------------------------- search
 
+    /**
+     * `_` and `%` are LIKE wildcards. Without an ESCAPE clause the escaped
+     * form was inert, so "pepite_fixtures" matched "Pepite.Fixtures.*" and a
+     * bare "%" matched everything.
+     */
+    public function testLikeWildcardsInASearchAreLiteral(): void
+    {
+        $this->assertSame(0, $this->json('feeds/default/v3/search?q=pepite_fixtures')['totalHits']);
+        $this->assertSame(0, $this->json('feeds/default/v3/search?q=%25')['totalHits']);
+        $this->assertGreaterThan(0, $this->json('feeds/default/v3/search?q=pepite.fixtures')['totalHits']);
+    }
+
+    public function testASearchWithAHugeNumberOfTermsStillAnswers(): void
+    {
+        $query = urlencode(implode(' ', array_fill(0, 200, 'pepite')));
+
+        $this->assertGreaterThan(0, $this->json('feeds/default/v3/search?q=' . $query)['totalHits']);
+    }
+
     public function testSearchReturnsTheLatestVersionAndTheFullList(): void
     {
         $results = $this->json('feeds/default/v3/search?q=simple');
