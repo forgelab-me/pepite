@@ -264,7 +264,10 @@ final class Install extends Controller
 
         $users->save($user);
         $user = $users->findById($users->getInsertID());
+        // The first account owns the instance: without 'superadmin' nobody could
+        // delete a package from the console until someone ran shield:user by hand.
         $user->addGroup('admin');
+        $user->addGroup('superadmin');
     }
 
     /**

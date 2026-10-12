@@ -141,19 +141,15 @@ final class Packages extends Controller
     private function setListed(int $feedId, int $packageId, int $versionId, bool $listed): ResponseInterface
     {
         $this->requireFeed($feedId);
-        $this->requirePackage($feedId, $packageId);
+        $package = $this->requirePackage($feedId, $packageId);
 
-        $versions = model(PackageVersionModel::class);
-        $version  = $versions->where('id', $versionId)->where('package_id', $packageId)->first();
+        $version = model(PackageVersionModel::class)->where('id', $versionId)->where('package_id', $packageId)->first();
 
         if ($version === null) {
             throw PageNotFoundException::forPageNotFound();
         }
 
-        // Delisting never deletes: published versions are immutable (PLAN.md
-        // 9.3), and anything already depending on this one must keep
-        // restoring. Only its visibility in search/registration changes.
-        $versions->update($versionId, ['is_listed' => $listed]);
+        service('packageVersions')->setListed($package, $version, $listed);
 
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/packages/' . $packageId))
@@ -161,15 +157,15 @@ final class Packages extends Controller
     }
 
     /**
-     * The `admin/*` route group already requires 'admin'. Stacking a
-     * second `group:superadmin` route filter would not express "admin OR
-     * superadmin" — CI4 merges group and route filters rather than
-     * replacing them, so both `group:admin` and `group:superadmin` would
-     * run as independent checks, each demanding its own membership: a
-     * superadmin who isn't also in 'admin' would be refused by the first
-     * filter before ever reaching this check. Checking here instead keeps
-     * the requirement to exactly "superadmin", on top of whatever already
-     * got the request this far.
+     * Superadmin is a tier *on top of* admin, not a replacement for it: the
+     * `admin/*` route group already demands 'admin', and a deletion needs
+     * 'superadmin' as well — an account in only one of the two is refused.
+     *
+     * It is checked here rather than as a second `group:superadmin` route
+     * filter for the answer's sake, not the logic (CI4 merges group and route
+     * filters, so that would also be an AND): a filter can only answer with a
+     * bare 403, whereas this sends the admin back to the package page with a
+     * sentence saying what was missing.
      */
     private function requireSuperadmin(int $feedId, int $packageId): ?ResponseInterface
     {

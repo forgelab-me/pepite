@@ -10,7 +10,6 @@ use App\Models\PackageModel;
 use CodeIgniter\Controller;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Shield\Models\UserIdentityModel;
 
 final class Feeds extends Controller
 {
@@ -54,6 +53,8 @@ final class Feeds extends Controller
             'allowed_package_types' => $this->packageTypesFromPost(),
         ]);
 
+        service('audit')->record('feed.create', $slug);
+
         return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" created.', $slug));
     }
 
@@ -85,6 +86,8 @@ final class Feeds extends Controller
             'allowed_package_types' => $this->packageTypesFromPost(),
         ]);
 
+        service('audit')->record('feed.update', $feed['slug']);
+
         return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" updated.', $feed['slug']));
     }
 
@@ -112,6 +115,8 @@ final class Feeds extends Controller
         if (is_dir($directory)) {
             $this->removeDirectory($directory);
         }
+
+        service('audit')->record('feed.delete', $feed['slug']);
 
         return redirect()->to(site_url('admin/feeds'))->with('message', sprintf('Feed "%s" deleted.', $feed['slug']));
     }
@@ -141,8 +146,7 @@ final class Feeds extends Controller
                 continue;
             }
 
-            model(UserIdentityModel::class)->where('id', $identityId)->where('type', 'access_token')->delete();
-            $rules->where('identity_id', $identityId)->delete();
+            service('apiKeyIssuer')->revoke($identityId);
         }
     }
 

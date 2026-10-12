@@ -186,6 +186,7 @@
                         <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/feeds') ?>">Admin feeds</a></li>
                         <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/keys') ?>">API keys</a></li>
                         <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/users') ?>">Admins</a></li>
+                        <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/audit') ?>">Audit</a></li>
                         <li class="nav-item"><a class="nav-link" href="<?= site_url('admin/updates') ?>">Updates</a></li>
                     <?php endif ?>
                     <li class="nav-item"><a class="nav-link" href="<?= site_url('logout') ?>">Log out</a></li>

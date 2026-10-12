@@ -58,6 +58,7 @@ class AdminUserSeeder extends Seeder
 
             $user = $users->findById($users->getInsertID());
             $user->addGroup('admin');
+            $user->addGroup('superadmin');
             $user->activate();
 
             echo "Admin account created: {$email}\n";

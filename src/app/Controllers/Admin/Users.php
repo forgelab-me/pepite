@@ -72,6 +72,8 @@ final class Users extends Controller
         $user->addGroup('admin');
         $user->activate();
 
+        service('audit')->record('admin.create', $email);
+
         return redirect()->to(site_url('admin/users'))->with('message', sprintf('Admin account "%s" created.', $email));
     }
 
@@ -93,6 +95,8 @@ final class Users extends Controller
         }
 
         $user->removeGroup('admin');
+
+        service('audit')->record('admin.demote', (string) ($user->email ?? $user->username ?? '#' . $userId));
 
         return redirect()->to(site_url('admin/users'))->with('message', 'Admin access removed.');
     }

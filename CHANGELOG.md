@@ -9,6 +9,56 @@ have to do when upgrading. When cutting a release, copy the section for that
 version into the update panel — `php spark update:manifest` embeds it in the
 release, and connected instances see it on `/admin/updates`.
 
+## [1.12.5] - 2026-10-09
+
+Third batch from the security and architecture review: one place for API
+keys, an audit log, and a few fixes the refactor turned up.
+
+### Added
+
+- **Audit log** (`/admin/audit`, admin only). Records who did what, when and
+  from where: API keys issued, changed, revoked or minted by Trusted
+  Publishing; packages and versions deleted, delisted or relisted; feeds
+  created, edited or deleted; admins added or demoted; trusted publishers
+  added or removed. Entries come from the web console, the NuGet API and the
+  CLI. It is append-only and read-only in the UI, and a failure to write an
+  entry never fails the action itself. **Run `php spark migrate --all`**
+  (or let the updater do it) to create the table.
+
+### Security
+
+- **A key could end up unrestricted if saving its restriction failed.** A key
+  is a token plus a rule row, and a token with no rule can push anywhere.
+  Creating, changing and revoking keys is now a single transaction in one
+  place (`ApiKeyIssuer`), used by the admin console, self-service keys, the
+  CLI and Trusted Publishing. CodeIgniter does not throw on a failed query
+  inside a transaction, so this also checks the transaction's status instead
+  of committing the half that worked.
+- **Deleting a package could remove its files after the database refused the
+  delete.** The purge now stops and keeps the files when the rows were not
+  removed.
+
+### Fixed
+
+- **An update that upgrades a dependency could leave the database on the old
+  schema.** The updater only ran the application's own migrations, so a new
+  Shield version with a new column installed fine and failed on first use.
+  `forgelab-me/ci4-updater` is now `^2.18`: when a release's `vendor/` brings
+  migrations, the update lists them, writes the files, keeps the site in
+  maintenance and runs `migrate --all` in a fresh process, from the panel's
+  *Run migrations* button or `php spark updater:finalize`.
+- **The first account created by the installer, the Docker seeder and the
+  dev seeder is also `superadmin`**, so package deletion from the console is
+  available without a manual `shield:user` step. Existing accounts are left
+  as they are.
+- Stale comments about the superadmin check, and a French 404 message on the
+  public pages.
+
+### Not in this release
+
+Explicit "unrestricted" key marker, `proxyIPs` documentation, ban and user
+management UI, quotas and reserved prefixes, extra indexes, purge tombstones.
+
 ## [1.12.4] - 2026-10-09
 
 Second batch from the security and architecture review: hardening of what an

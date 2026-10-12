@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Filters\NuGetApiKey;
+use App\Libraries\ApiKeyIssuer;
 use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use CodeIgniter\Controller;
@@ -57,37 +57,20 @@ final class ApiKeys extends Controller
             ]));
         }
 
-        $readOnly = (bool) $this->request->getPost('read_only');
-        $scopes   = $readOnly
-            ? ['packages.read']
-            : ['packages.read', NuGetApiKey::SCOPE_PUSH, NuGetApiKey::SCOPE_UNLIST];
-
         $name  = trim((string) $this->request->getPost('name')) ?: 'API key';
-        $token = $user->generateAccessToken($name, $scopes);
-
-        $feedSlug = trim((string) $this->request->getPost('feed'));
-        $pattern  = trim((string) $this->request->getPost('pattern'));
-        $noCreate = (bool) $this->request->getPost('no_create');
-
-        $feed = $feedSlug === '' ? null : model(FeedModel::class)->findBySlug($feedSlug);
-
-        if ($feed !== null || $pattern !== '' || $noCreate) {
-            model(FeedApiKeyRuleModel::class)->insert([
-                'identity_id'        => (int) $token->id,
-                'feed_id'            => $feed === null ? null : (int) $feed['id'],
-                'id_pattern'         => $pattern === '' ? null : $pattern,
-                'can_create_package' => ! $noCreate,
-                'created_at'         => date('Y-m-d H:i:s'),
-            ]);
-        }
+        $token = service('apiKeyIssuer')->issue(
+            $user,
+            $name,
+            ApiKeyIssuer::scopes((bool) $this->request->getPost('read_only')),
+            $this->ruleFromPost(),
+        );
 
         return $this->response->setBody(view('admin/keys/created', ['token' => $token->raw_token]));
     }
 
     public function revoke(int $identityId): ResponseInterface
     {
-        model(UserIdentityModel::class)->where('id', $identityId)->where('type', 'access_token')->delete();
-        model(FeedApiKeyRuleModel::class)->where('identity_id', $identityId)->delete();
+        service('apiKeyIssuer')->revoke($identityId);
 
         return redirect()->to(site_url('admin/keys'))->with('message', 'Key revoked.');
     }
@@ -115,39 +98,38 @@ final class ApiKeys extends Controller
     {
         $this->requireIdentity($identityId);
 
-        $readOnly = (bool) $this->request->getPost('read_only');
-        $scopes   = $readOnly
-            ? ['packages.read']
-            : ['packages.read', NuGetApiKey::SCOPE_PUSH, NuGetApiKey::SCOPE_UNLIST];
+        service('apiKeyIssuer')->reconfigure(
+            $identityId,
+            ApiKeyIssuer::scopes((bool) $this->request->getPost('read_only')),
+            $this->ruleFromPost(),
+        );
 
-        model(UserIdentityModel::class)->update($identityId, ['extra' => serialize($scopes)]);
+        return redirect()->to(site_url('admin/keys'))->with('message', 'Key updated.');
+    }
 
-        $rules    = model(FeedApiKeyRuleModel::class);
+    /**
+     * The restriction the form asks for, or null when it asks for none —
+     * which makes the key unrestricted, so an admin leaving every field
+     * blank is a deliberate act, not a default.
+     *
+     * @return array{feed_id: int|null, id_pattern: string|null, can_create_package: bool}|null
+     */
+    private function ruleFromPost(): ?array
+    {
         $feedSlug = trim((string) $this->request->getPost('feed'));
         $pattern  = trim((string) $this->request->getPost('pattern'));
         $noCreate = (bool) $this->request->getPost('no_create');
         $feed     = $feedSlug === '' ? null : model(FeedModel::class)->findBySlug($feedSlug);
 
-        $existing = $rules->where('identity_id', $identityId)->first();
-        $hasRule  = $feed !== null || $pattern !== '' || $noCreate;
-
-        if (! $hasRule) {
-            if ($existing !== null) {
-                $rules->delete($existing['id']);
-            }
-        } else {
-            $data = [
-                'identity_id'        => $identityId,
-                'feed_id'            => $feed === null ? null : (int) $feed['id'],
-                'id_pattern'         => $pattern === '' ? null : $pattern,
-                'can_create_package' => ! $noCreate,
-                'created_at'         => date('Y-m-d H:i:s'),
-            ];
-
-            $existing === null ? $rules->insert($data) : $rules->update($existing['id'], $data);
+        if ($feed === null && $pattern === '' && ! $noCreate) {
+            return null;
         }
 
-        return redirect()->to(site_url('admin/keys'))->with('message', 'Key updated.');
+        return [
+            'feed_id'            => $feed === null ? null : (int) $feed['id'],
+            'id_pattern'         => $pattern === '' ? null : $pattern,
+            'can_create_package' => ! $noCreate,
+        ];
     }
 
     /**

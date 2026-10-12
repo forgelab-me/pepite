@@ -17,6 +17,7 @@ use CodeIgniter\Shield\Test\AuthenticationTesting;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\LogsOut;
 
 /**
  * account/* — self-service API keys and "my packages", the third-party
@@ -27,24 +28,13 @@ use CodeIgniter\Test\FeatureTestTrait;
 final class AccountConsoleTest extends CIUnitTestCase
 {
     use AuthenticationTesting;
+    use LogsOut;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
     protected $migrate = true;
     protected $refresh = true;
     protected $namespace;
-
-    protected function tearDown(): void
-    {
-        // actingAs() logs a real session in via Shield's Session
-        // authenticator — DatabaseTestTrait's $refresh wipes the database
-        // between tests, not the PHP session, so a dangling login here would
-        // otherwise leak into whichever test class runs next in the same
-        // process.
-        auth('session')->getAuthenticator()->logout();
-
-        parent::tearDown();
-    }
 
     public function testAGuestIsRedirectedToLoginForAccountPages(): void
     {

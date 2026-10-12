@@ -2,12 +2,16 @@
 
 namespace Config;
 
+use App\Libraries\ApiKeyIssuer;
+use App\Libraries\Audit;
 use App\Libraries\FeedResolver;
 use App\Libraries\Http\MultipartPutParser;
 use App\Libraries\PackagePublisher;
 use App\Libraries\PackagePurger;
 use App\Libraries\PackageStorage;
+use App\Libraries\PackageVersionService;
 use App\Libraries\PublishAuthorizer;
+use App\Models\AuditLogModel;
 use App\Models\FeedApiKeyRuleModel;
 use App\Models\FeedModel;
 use App\Models\PackageDependencyModel;
@@ -15,6 +19,7 @@ use App\Models\PackageModel;
 use App\Models\PackageOwnerModel;
 use App\Models\PackageVersionModel;
 use CodeIgniter\Config\BaseService;
+use CodeIgniter\Shield\Models\UserIdentityModel;
 
 /**
  * Services Configuration file.
@@ -78,13 +83,40 @@ class Services extends BaseService
         );
     }
 
+    public static function apiKeyIssuer(bool $getShared = true): ApiKeyIssuer
+    {
+        if ($getShared) {
+            return static::getSharedInstance('apiKeyIssuer');
+        }
+
+        return new ApiKeyIssuer(db_connect(), model(FeedApiKeyRuleModel::class), model(UserIdentityModel::class), static::audit());
+    }
+
+    public static function audit(bool $getShared = true): Audit
+    {
+        if ($getShared) {
+            return static::getSharedInstance('audit');
+        }
+
+        return new Audit(model(AuditLogModel::class));
+    }
+
     public static function packagePurger(bool $getShared = true): PackagePurger
     {
         if ($getShared) {
             return static::getSharedInstance('packagePurger');
         }
 
-        return new PackagePurger(static::packageStorage(), db_connect());
+        return new PackagePurger(static::packageStorage(), db_connect(), static::audit());
+    }
+
+    public static function packageVersions(bool $getShared = true): PackageVersionService
+    {
+        if ($getShared) {
+            return static::getSharedInstance('packageVersions');
+        }
+
+        return new PackageVersionService(model(PackageVersionModel::class), static::audit());
     }
 
     public static function multipartPutParser(bool $getShared = true): MultipartPutParser

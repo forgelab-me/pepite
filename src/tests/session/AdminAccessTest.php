@@ -8,6 +8,7 @@ use CodeIgniter\Shield\Test\AuthenticationTesting;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\LogsOut;
 
 /**
  * Lot 0 acceptance test: Shield is wired up and the self-update panel is
@@ -18,6 +19,7 @@ use CodeIgniter\Test\FeatureTestTrait;
 final class AdminAccessTest extends CIUnitTestCase
 {
     use AuthenticationTesting;
+    use LogsOut;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 

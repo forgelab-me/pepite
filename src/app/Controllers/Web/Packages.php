@@ -157,6 +157,6 @@ final class Packages extends Controller
 
     private function notFound(): ResponseInterface
     {
-        return $this->response->setStatusCode(404)->setBody(view('errors/html/error_404', ['message' => 'Page introuvable']));
+        return $this->response->setStatusCode(404)->setBody(view('errors/html/error_404', ['message' => 'Page not found']));
     }
 }

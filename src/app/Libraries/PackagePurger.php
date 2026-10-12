@@ -9,6 +9,7 @@ use App\Models\PackageModel;
 use App\Models\PackageOwnerModel;
 use App\Models\PackageVersionModel;
 use CodeIgniter\Database\BaseConnection;
+use RuntimeException;
 
 /**
  * Irreversibly removes a package, or one or more of its versions — database
@@ -27,6 +28,7 @@ final class PackagePurger
     public function __construct(
         private readonly PackageStorage $storage,
         private readonly BaseConnection $db,
+        private readonly Audit $audit,
     ) {
     }
 
@@ -51,6 +53,19 @@ final class PackagePurger
         }
 
         $this->db->transComplete();
+
+        // transComplete() rolls back on a failed query without throwing. The
+        // files must stay then: they are the only copy of what the rows still
+        // describe.
+        if (! $this->db->transStatus()) {
+            throw new RuntimeException(sprintf('Could not delete "%s": the database refused.', $package['package_id']));
+        }
+
+        $this->audit->record(
+            $deletePackageToo ? 'package.purge' : 'version.purge',
+            sprintf('%s (feed #%d)', $package['package_id'], $package['feed_id']),
+            ['versions' => array_column($toDelete, 'version_normalized')],
+        );
 
         // Files are removed only once the rows they were keyed off are
         // safely gone — a route that resolves through the database can no

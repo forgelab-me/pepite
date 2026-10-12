@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Controllers\Api;
 
 use App\Filters\NuGetApiKey;
-use App\Models\FeedApiKeyRuleModel;
+use App\Libraries\ApiKeyIssuer;
 use App\Models\TrustedPublisherModel;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Shield\Models\UserModel;
 use Config\TrustedPublishing;
 use Forgelabme\TrustedPublishing\PublisherMatcher;
-use Forgelabme\TrustedPublishing\ScopedTokens;
 use Forgelabme\TrustedPublishing\VerificationResult;
 use Forgelabme\TrustedPublishing\Verifier;
 
@@ -85,21 +84,19 @@ final class PublishToken extends Controller
             return $this->error(403, 'The account that trusted this publisher no longer exists.');
         }
 
-        $scopes = ['packages.read', NuGetApiKey::SCOPE_PUSH];
+        $scopes = [ApiKeyIssuer::SCOPE_READ, NuGetApiKey::SCOPE_PUSH];
 
-        // Trusted Publishing mints one token per workflow run, so this is
-        // where the growth happens — nothing else prunes them.
-        ScopedTokens::purgeExpired(NuGetApiKey::SCOPE_PUSH);
-
-        $token = ScopedTokens::mint($user, $identity->describe(), $scopes, self::MINTED_TTL_MINUTES);
-
-        model(FeedApiKeyRuleModel::class)->insert([
-            'identity_id'        => (int) $token->id,
-            'feed_id'            => $feedId,
-            'id_pattern'         => $publisher['id_pattern'],
-            'can_create_package' => (bool) $publisher['can_create_package'],
-            'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        $token = service('apiKeyIssuer')->mintExpiring(
+            $user,
+            $identity->describe(),
+            $scopes,
+            self::MINTED_TTL_MINUTES,
+            [
+                'feed_id'            => $feedId,
+                'id_pattern'         => $publisher['id_pattern'],
+                'can_create_package' => (bool) $publisher['can_create_package'],
+            ],
+        );
 
         $publisherModel->touch((int) $publisher['id']);
 

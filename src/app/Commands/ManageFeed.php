@@ -81,6 +81,8 @@ final class ManageFeed extends BaseCommand
             'allowed_package_types' => $types === [] ? null : json_encode($types),
         ]);
 
+        service('audit')->record('feed.create', $slug);
+
         CLI::write(sprintf('  %s feed "%s" created.', CLI::color('OK', 'green'), $slug));
 
         return EXIT_SUCCESS;

@@ -24,6 +24,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\Fixtures;
+use Tests\Support\LogsOut;
 
 /**
  * The admin console: feeds and API keys, the only way to manage either before
@@ -38,6 +39,7 @@ use Tests\Support\Fixtures;
 final class AdminConsoleTest extends CIUnitTestCase
 {
     use AuthenticationTesting;
+    use LogsOut;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 

@@ -63,6 +63,7 @@ class DevAdminSeeder extends Seeder
 
         $user = $users->findById($users->getInsertID());
         $user->addGroup('admin');
+        $user->addGroup('superadmin');
 
         echo "Administrator created: {$email}\n";
         echo "Password: {$password}\n";

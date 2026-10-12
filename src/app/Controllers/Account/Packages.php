@@ -54,19 +54,15 @@ final class Packages extends Controller
 
     private function setListed(int $packageId, int $versionId, bool $listed): ResponseInterface
     {
-        $this->requireOwnedPackage($packageId);
+        $package = $this->requireOwnedPackage($packageId);
 
-        $versions = model(PackageVersionModel::class);
-        $version  = $versions->where('id', $versionId)->where('package_id', $packageId)->first();
+        $version = model(PackageVersionModel::class)->where('id', $versionId)->where('package_id', $packageId)->first();
 
         if ($version === null) {
             throw PageNotFoundException::forPageNotFound();
         }
 
-        // Delisting never deletes — same rule Admin\Packages applies:
-        // published versions are immutable, only their visibility in
-        // search/registration changes.
-        $versions->update($versionId, ['is_listed' => $listed]);
+        service('packageVersions')->setListed($package, $version, $listed);
 
         return redirect()
             ->to(site_url('account/packages/' . $packageId))

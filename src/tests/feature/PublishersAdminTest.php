@@ -12,6 +12,7 @@ use CodeIgniter\Shield\Test\AuthenticationTesting;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\LogsOut;
 
 /**
  * The admin console side of Trusted Publishing: adding, listing and removing
@@ -23,6 +24,7 @@ use CodeIgniter\Test\FeatureTestTrait;
 final class PublishersAdminTest extends CIUnitTestCase
 {
     use AuthenticationTesting;
+    use LogsOut;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 

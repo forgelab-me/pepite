@@ -19,6 +19,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\Fixtures;
+use Tests\Support\LogsOut;
 
 /**
  * The console equivalent of `pepite:purge` — permanently deleting a package
@@ -31,6 +32,7 @@ use Tests\Support\Fixtures;
 final class AdminPurgeTest extends CIUnitTestCase
 {
     use AuthenticationTesting;
+    use LogsOut;
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
@@ -51,7 +53,6 @@ final class AdminPurgeTest extends CIUnitTestCase
     {
         $this->removeDirectory($this->storageRoot);
         Services::reset();
-        auth('session')->getAuthenticator()->logout();
 
         parent::tearDown();
     }

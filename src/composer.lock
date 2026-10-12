@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "375204a1bb256add7a8ec7d0dc1b3c0f",
+    "content-hash": "9b65e6a1d04e69b7c81cc79985e06d24",
     "packages": [
         {
             "name": "codeigniter4/framework",
@@ -422,16 +422,16 @@
         },
         {
             "name": "forgelab-me/ci4-updater",
-            "version": "v2.17.1",
+            "version": "v2.18.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/forgelab-me/ci4-updater.git",
-                "reference": "528a6bd65f38966605518f899f97c70620dc3db7"
+                "reference": "93a4dfa3aff56b9e9784015f33f7d21065be5ff0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/forgelab-me/ci4-updater/zipball/528a6bd65f38966605518f899f97c70620dc3db7",
-                "reference": "528a6bd65f38966605518f899f97c70620dc3db7",
+                "url": "https://api.github.com/repos/forgelab-me/ci4-updater/zipball/93a4dfa3aff56b9e9784015f33f7d21065be5ff0",
+                "reference": "93a4dfa3aff56b9e9784015f33f7d21065be5ff0",
                 "shasum": ""
             },
             "require": {
@@ -476,7 +476,7 @@
                 "issues": "https://github.com/forgelab-me/ci4-updater/issues",
                 "source": "https://github.com/forgelab-me/ci4-updater"
             },
-            "time": "2026-10-09T14:24:48+00:00"
+            "time": "2026-10-12T22:55:13+00:00"
         },
         {
             "name": "laminas/laminas-escaper",

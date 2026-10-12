@@ -181,9 +181,7 @@ final class PackagePublish extends Controller
             return $error;
         }
 
-        $versions = model(PackageVersionModel::class);
-
-        $row = $versions
+        $row = model(PackageVersionModel::class)
             ->where('package_id', (int) $package['id'])
             ->where('version_normalized_lower', strtolower($version))
             ->first();
@@ -192,9 +190,7 @@ final class PackagePublish extends Controller
             return $this->error(404, sprintf('No version "%s" of "%s".', $version, $id));
         }
 
-        // Delisting never deletes: published versions are immutable, and
-        // anything already depending on this one must keep restoring.
-        $versions->update((int) $row['id'], ['is_listed' => $listed]);
+        service('packageVersions')->setListed($package, $row, $listed);
 
         return $this->response->setStatusCode(204)->setBody('');
     }

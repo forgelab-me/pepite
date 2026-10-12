@@ -88,6 +88,14 @@ final class Publishers extends Controller
             'created_at'          => date('Y-m-d H:i:s'),
         ]);
 
+        service('audit')->record('publisher.add', sprintf('%s on feed "%s"', $repository, $feed['slug']), [
+            'provider'    => $provider,
+            'environment' => $environment === '' ? null : $environment,
+            'workflow'    => $workflow === '' ? null : $workflow,
+            'ids'         => $pattern === '' ? '*' : $pattern,
+            'create'      => $canCreate,
+        ]);
+
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/publishers'))
             ->with('message', sprintf('"%s" now trusts %s.', $feed['name'], $repository));
@@ -95,12 +103,15 @@ final class Publishers extends Controller
 
     public function destroy(int $feedId, int $publisherId): ResponseInterface
     {
-        $this->requireFeed($feedId);
+        $feed = $this->requireFeed($feedId);
 
-        model(TrustedPublisherModel::class)
-            ->where('id', $publisherId)
-            ->where('feed_id', $feedId)
-            ->delete();
+        $publishers = model(TrustedPublisherModel::class);
+        $publisher  = $publishers->where('id', $publisherId)->where('feed_id', $feedId)->first();
+
+        if ($publisher !== null) {
+            $publishers->delete($publisherId);
+            service('audit')->record('publisher.remove', sprintf('%s on feed "%s"', $publisher['repository'], $feed['slug']));
+        }
 
         return redirect()
             ->to(site_url('admin/feeds/' . $feedId . '/publishers'))

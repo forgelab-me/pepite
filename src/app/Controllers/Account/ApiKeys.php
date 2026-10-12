@@ -74,15 +74,12 @@ final class ApiKeys extends Controller
         }
 
         $name  = trim((string) $this->request->getPost('name')) ?: 'API key';
-        $token = auth()->user()->generateAccessToken($name, ['packages.push', NuGetApiKey::SCOPE_UNLIST]);
-
-        model(FeedApiKeyRuleModel::class)->insert([
-            'identity_id'        => (int) $token->id,
-            'feed_id'            => (int) $feed['id'],
-            'id_pattern'         => null,
-            'can_create_package' => true,
-            'created_at'         => date('Y-m-d H:i:s'),
-        ]);
+        $token = service('apiKeyIssuer')->issue(
+            auth()->user(),
+            $name,
+            [NuGetApiKey::SCOPE_PUSH, NuGetApiKey::SCOPE_UNLIST],
+            ['feed_id' => (int) $feed['id'], 'id_pattern' => null, 'can_create_package' => true],
+        );
 
         return $this->response->setBody(view('account/keys/created', ['token' => $token->raw_token]));
     }
@@ -99,8 +96,7 @@ final class ApiKeys extends Controller
             return redirect()->to(site_url('account/keys'))->with('error', 'No such key.');
         }
 
-        model(UserIdentityModel::class)->delete($identityId);
-        model(FeedApiKeyRuleModel::class)->where('identity_id', $identityId)->delete();
+        service('apiKeyIssuer')->revoke($identityId);
 
         return redirect()->to(site_url('account/keys'))->with('message', 'Key revoked.');
     }

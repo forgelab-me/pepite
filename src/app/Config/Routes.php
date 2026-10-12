@@ -37,15 +37,17 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin', 'filter' => ['g
     $routes->get('feeds/(:num)/packages/(:num)', 'Packages::show/$1/$2');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/unlist', 'Packages::unlist/$1/$2/$3');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/relist', 'Packages::relist/$1/$2/$3');
-    // Superadmin only — Packages::requireSuperadmin() checks it in the
-    // controller, not here (stacking a second group:superadmin filter would
-    // wrongly require BOTH admin and superadmin, not either).
+    // Superadmin too, on top of admin — Packages::requireSuperadmin() checks
+    // it in the controller so a refusal can explain itself with a message
+    // instead of a bare 403.
     $routes->post('feeds/(:num)/packages/(:num)/purge', 'Packages::purge/$1/$2');
     $routes->post('feeds/(:num)/packages/(:num)/versions/(:num)/purge', 'Packages::purgeVersion/$1/$2/$3');
 
     $routes->get('feeds/(:num)/publishers', 'Publishers::index/$1');
     $routes->post('feeds/(:num)/publishers', 'Publishers::store/$1');
     $routes->post('feeds/(:num)/publishers/(:num)/delete', 'Publishers::destroy/$1/$2');
+
+    $routes->get('audit', 'Audit::index');
 
     $routes->get('users', 'Users::index');
     $routes->get('users/create', 'Users::create');
